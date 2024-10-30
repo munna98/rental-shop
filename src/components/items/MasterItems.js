@@ -18,36 +18,64 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import axios from 'axios';
+import { useConfirmation } from "@/hooks/useConfirmation";
+import EditMasterItemForm from "@/components/forms/EditMasterItemForm";
 
-const MasterItems = ({ items, onDelete }) => {
+const MasterItems = ({ items, onDelete, onUpdate }) => {
   const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false); // State for edit form
+  const [currentItem, setCurrentItem] = useState(null); // Track the current item being edited
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  const { showConfirmation, ConfirmationDialog } = useConfirmation();
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`/api/master-items/${id}`);
-      onDelete(id);
+  const handleDelete = async (id, itemName) => {
+    const isConfirmed = await showConfirmation({
+      title: "Delete Confirmation",
+      message: `Are you sure you want to delete "${itemName}"?`,
+    });
 
-      setSnackbar({
-        open: true,
-        message: "Master item deleted successfully!",
-        severity: "success",
-      });
-    } catch (error) {
-      console.error("Error deleting master item:", error);
+    if (isConfirmed) {
+      try {
+        await axios.delete(`/api/master-items/${id}`);
+        // Call the onDelete prop to update master items in ItemsPage
+        onDelete(id);
 
-      setSnackbar({
-        open: true,
-        message: "Failed to delete master item.",
-        severity: "error",
-      });
+        setSnackbar({
+          open: true,
+          message: "Master item deleted successfully!",
+          severity: "success",
+        });
+      } catch (error) {
+        console.error("Error deleting master item:", error);
+        setSnackbar({
+          open: true,
+          message: "Failed to delete master item.",
+          severity: "error",
+        });
+      }
     }
+  };
+
+  const handleEditOpen = (item) => {
+    setCurrentItem(item);
+    setOpenEdit(true);
+  };
+
+  const handleUpdate = (updatedItem) => {
+    onUpdate(updatedItem); // Call the onUpdate prop to update the item in ItemsPage
+    setSnackbar({
+      open: true,
+      message: "Item updated successfully!",
+      severity: "success",
+    });
   };
 
   const handleAddSubItemOpen = () => setOpen(true);
   const handleAddSubItemClose = () => setOpen(false);
+  const handleEditClose = () => setOpenEdit(false);
 
   return (
     <>
@@ -58,9 +86,7 @@ const MasterItems = ({ items, onDelete }) => {
               <TableCell sx={{ fontWeight: "bold" }}>Image</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Item Name</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Code</TableCell>
-              <TableCell align="center" sx={{ fontWeight: "bold" }}>
-                Actions
-              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: "bold" }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -77,7 +103,7 @@ const MasterItems = ({ items, onDelete }) => {
                     color="primary"
                     startIcon={<EditIcon />}
                     sx={{ marginRight: 1 }}
-                    onClick={() => console.log("Edit", item._id)}
+                    onClick={() => handleEditOpen(item)}
                   >
                     Edit
                   </Button>
@@ -85,7 +111,7 @@ const MasterItems = ({ items, onDelete }) => {
                     variant="outlined"
                     color="error"
                     startIcon={<DeleteIcon />}
-                    onClick={() => handleDelete(item._id)}
+                    onClick={() => handleDelete(item._id, item.name)}
                   >
                     Delete
                   </Button>
@@ -105,9 +131,19 @@ const MasterItems = ({ items, onDelete }) => {
         </Table>
       </TableContainer>
 
-      <AddSubItemForm open={open} handleClose={handleAddSubItemClose} masterItems={items} />
+      <AddSubItemForm 
+        open={open} 
+        handleClose={handleAddSubItemClose} 
+        masterItems={items} 
+        onAdd={() => {}} // Pass the handler to the add form (update accordingly if needed)
+      />
+      <EditMasterItemForm 
+        open={openEdit} 
+        handleClose={handleEditClose} 
+        item={currentItem} 
+        onUpdate={handleUpdate} // Pass the update handler
+      />
 
-      {/* Snackbar for delete success or error messages */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -118,6 +154,8 @@ const MasterItems = ({ items, onDelete }) => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <ConfirmationDialog />
     </>
   );
 };

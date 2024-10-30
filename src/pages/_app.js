@@ -5,6 +5,7 @@ import { lightTheme, darkTheme } from "../styles/theme"; // Import custom themes
 import DashboardLayout from "../layouts/DashboardLayout"; // Import layout
 import { ItemsProvider } from "@/context/ItemsContext";
 
+
 function MyApp({ Component, pageProps }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 

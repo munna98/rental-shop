@@ -20,7 +20,7 @@ const AddMasterItemForm = ({ open, handleClose, onAddNewMasterItem }) => {
         code: itemCode,
       });
 
-      onAddNewMasterItem(response.data);
+      onAddNewMasterItem(response.data); // Call the function passed from ItemsPage
 
       // Show success snackbar
       setSnackbar({

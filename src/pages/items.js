@@ -24,6 +24,16 @@ const ItemsPage = () => {
   const [masterItems, setMasterItems] = useState([]);
   const [subItems, setSubItems] = useState([]);
 
+  const onAddNewMasterItem = (newItem) => {
+    setMasterItems((prevItems) => [...prevItems, newItem]);
+  };
+
+  const handleUpdateMasterItem = (updatedItem) => {
+    setMasterItems((prevItems) =>
+      prevItems.map((item) => (item._id === updatedItem._id ? updatedItem : item))
+    );
+  };
+
   const handleItemTypeChange = (event) => {
     setItemType(event.target.value);
   };
@@ -105,12 +115,20 @@ const ItemsPage = () => {
       </Box>
 
       {itemType === "Master Items" ? (
-        <MasterItems items={masterItems} onDelete={handleDeleteMasterItem} />
+        <MasterItems 
+          items={masterItems} 
+          onDelete={handleDeleteMasterItem} 
+          onUpdate={handleUpdateMasterItem} // Pass the update handler
+        />
       ) : (
         <SubItems items={subItems} />
       )}
 
-      <AddMasterItemForm open={open} handleClose={handleAddMasterItemClose} />
+      <AddMasterItemForm 
+        open={open} 
+        handleClose={handleAddMasterItemClose} 
+        onAddNewMasterItem={onAddNewMasterItem} // Pass the function to the form
+      />
     </Box>
   );
 };
