@@ -1,6 +1,4 @@
-// src/components/forms/AddSubItemForm.js
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -8,25 +6,15 @@ import {
   DialogActions,
   TextField,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   IconButton,
-  Typography,
   Snackbar,
   Alert,
+  Typography,
 } from "@mui/material";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import axios from "axios";
 
-const AddSubItemForm = ({
-  open,
-  handleClose,
-  masterItems,
-  onAdd,
-  selectedMaster,
-}) => {
+const EditSubItemForm = ({ open, handleClose, item, onUpdate }) => {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [rentRate, setRentRate] = useState("");
@@ -38,43 +26,53 @@ const AddSubItemForm = ({
     severity: "success",
   });
 
+  useEffect(() => {
+    if (item) {
+      setMaster(item.master);
+      setName(item.name);
+      setCode(item.code);
+      setRentRate(item.rentRate);
+      setDescription(item.description);
+      setImage(item.image); // assuming the sub-item has an image property
+    }
+  }, [item]);
+
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    if (event) event.preventDefault();
     try {
-      const response = await axios.post("/api/sub-items", {
-        master: selectedMaster,
+      const updatedItemData = {
+        _id: item._id,
         name,
         code,
         rentRate,
         description,
         image,
-      });
+        master: item.master, // Preserve the master reference
+        status: item.status, // Preserve the status
+      };
 
-      handleClose(); // Close the dialog after submission
-      onAdd(response.data); // Call the prop function to add the new subitem to the state
+      const response = await axios.put(`/api/sub-items/${item._id}`, updatedItemData);
 
-      // Show success snackbar
+      // Create complete updated item including _id and all data
+      // Pass the complete updated item back
+      onUpdate(updatedItemData);
+      
       setSnackbar({
         open: true,
-        message: "Sub item added successfully!",
+        message: "Sub item updated successfully!",
         severity: "success",
       });
 
-      // Reset the fields after submission
-      setName("");
-      setCode("");
-      setRentRate("");
-      setDescription("");
-      setImage("");
+      handleClose(); // Close the dialog after submission
     } catch (error) {
-      console.error("Error adding sub item:", error);
-      // Show error snackbar
+      console.error("Error updating sub item:", error);
       setSnackbar({
         open: true,
-        message: "Failed to add subitem.",
+        message: "Failed to update sub item.",
         severity: "error",
       });
     }
@@ -91,27 +89,20 @@ const AddSubItemForm = ({
     }
   };
 
+  console.log(item,"item");
+  
   return (
     <>
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Add Sub Item</DialogTitle>
+        <DialogTitle>Edit Sub Item</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="master-item-label">Master Item</InputLabel>
-            <Select
-              labelId="master-item-label"
-              value={selectedMaster}>
-              {/* Only show the selected master item if it exists */}
-              {masterItems
-                .filter((item) => item._id === selectedMaster)
-                .map((item) => (
-                  <MenuItem key={item._id} value={item._id}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
-
+          <TextField
+            margin="normal"
+            label="Master Item"
+            value={item?.master.name}
+            fullWidth
+            disabled
+          />
           <TextField
             margin="normal"
             label="Name"
@@ -167,7 +158,7 @@ const AddSubItemForm = ({
             Cancel
           </Button>
           <Button onClick={handleSubmit} color="primary">
-            Add Sub Item
+            Update Sub Item
           </Button>
         </DialogActions>
       </Dialog>
@@ -190,4 +181,4 @@ const AddSubItemForm = ({
   );
 };
 
-export default AddSubItemForm;
+export default EditSubItemForm;

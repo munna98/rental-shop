@@ -21,12 +21,12 @@ import axios from 'axios';
 import { useConfirmation } from "@/hooks/useConfirmation";
 import EditMasterItemForm from "@/components/forms/EditMasterItemForm";
 
-const MasterItems = ({ items, onDelete, onUpdate }) => {
+const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMaster}) => {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false); // State for edit form
   const [currentItem, setCurrentItem] = useState(null); // Track the current item being edited
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-
+  
   const { showConfirmation, ConfirmationDialog } = useConfirmation();
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
@@ -73,7 +73,11 @@ const MasterItems = ({ items, onDelete, onUpdate }) => {
     });
   };
 
-  const handleAddSubItemOpen = () => setOpen(true);
+  const handleAddSubItemOpen = (item) => {
+    setOpen(true)
+    setSelectedMaster(item._id)
+    };
+
   const handleAddSubItemClose = () => setOpen(false);
   const handleEditClose = () => setOpenEdit(false);
 
@@ -119,7 +123,7 @@ const MasterItems = ({ items, onDelete, onUpdate }) => {
                     variant="outlined"
                     color="success"
                     startIcon={<AddIcon />}
-                    onClick={handleAddSubItemOpen}
+                    onClick={() =>handleAddSubItemOpen(item)}
                     sx={{ marginLeft: 1 }}
                   >
                     Add 
@@ -135,6 +139,7 @@ const MasterItems = ({ items, onDelete, onUpdate }) => {
         open={open} 
         handleClose={handleAddSubItemClose} 
         masterItems={items} 
+        selectedMaster={selectedMaster}
         onAdd={() => {}} // Pass the handler to the add form (update accordingly if needed)
       />
       <EditMasterItemForm 

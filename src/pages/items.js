@@ -1,4 +1,5 @@
 // src/pages/ItemsPage.js
+
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -9,6 +10,7 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
+  Snackbar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
@@ -16,13 +18,19 @@ import AddMasterItemForm from "@/components/forms/AddMasterItemForm";
 import StyledButton from "@/components/buttons/StyledButton";
 import axios from 'axios';
 import MasterItems from "@/components/items/MasterItems";
-import SubItems from "@/components/items/SubItem";
+import AddSubItemForm from "@/components/forms/AddSubItemForm";
+import SubItems from "@/components/items/SubItems";
+
 
 const ItemsPage = () => {
   const [itemType, setItemType] = useState("Sub Items");
   const [open, setOpen] = useState(false);
+  const [openSubItem, setOpenSubItem] = useState(false);
   const [masterItems, setMasterItems] = useState([]);
   const [subItems, setSubItems] = useState([]);
+  const [selectedMaster, setSelectedMaster] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");  
 
   const onAddNewMasterItem = (newItem) => {
     setMasterItems((prevItems) => [...prevItems, newItem]);
@@ -30,6 +38,12 @@ const ItemsPage = () => {
 
   const handleUpdateMasterItem = (updatedItem) => {
     setMasterItems((prevItems) =>
+      prevItems.map((item) => (item._id === updatedItem._id ? updatedItem : item))
+    );
+  };
+
+  const handleUpdateSubItem = (updatedItem) => {
+    setSubItems((prevItems) =>
       prevItems.map((item) => (item._id === updatedItem._id ? updatedItem : item))
     );
   };
@@ -64,8 +78,25 @@ const ItemsPage = () => {
     }
   };
 
+  const handleAddSubItemClose = () => {
+    setOpenSubItem(false);
+  };
+
+  const handleAddSubItem = (newSubItem) => {
+    setSubItems((prevSubItems) => [...prevSubItems, newSubItem]);
+    setSnackbarMessage("Sub item added successfully!");
+    setSnackbarOpen(true);
+  };
+
   const handleDeleteMasterItem = (id) => {
     setMasterItems((prevItems) => prevItems.filter((item) => item._id !== id));
+  };
+
+  const handleDeleteSubItem = (id) => {
+    setSubItems((prevItems) => prevItems.filter((item) => item._id !== id));
+  };
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   useEffect(() => {
@@ -117,17 +148,39 @@ const ItemsPage = () => {
       {itemType === "Master Items" ? (
         <MasterItems 
           items={masterItems} 
+          selectedMaster={selectedMaster}
+          setSelectedMaster={setSelectedMaster}
           onDelete={handleDeleteMasterItem} 
-          onUpdate={handleUpdateMasterItem} // Pass the update handler
+          onUpdate={handleUpdateMasterItem} 
         />
       ) : (
-        <SubItems items={subItems} />
+        <SubItems 
+        items={subItems}
+        onDelete={handleDeleteSubItem} 
+        onUpdate={handleUpdateSubItem}         
+        masterItems={masterItems}
+        />
       )}
 
       <AddMasterItemForm 
         open={open} 
         handleClose={handleAddMasterItemClose} 
-        onAddNewMasterItem={onAddNewMasterItem} // Pass the function to the form
+        onAddNewMasterItem={onAddNewMasterItem} 
+      />
+
+      <AddSubItemForm
+        open={openSubItem}
+        handleClose={handleAddSubItemClose}
+        masterItems={masterItems}
+        onAdd={handleAddSubItem}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+        autoHideDuration={3000}
       />
     </Box>
   );

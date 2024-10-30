@@ -1,14 +1,30 @@
-
 import mongoose from 'mongoose';
 
-const subItemSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  code: { type: String, required: true },
-  masteritem: { type: mongoose.Schema.Types.ObjectId, ref: 'MasterItem', required: true },
-  rentRate: { type: String, required: true },
-  status: { type: String},
-  description: { type: String },
-  image: String,
+const SubItemSchema = new mongoose.Schema({
+  master: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MasterItem', // Reference the MasterItem model
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  code: {
+    type: String,
+    required: true,
+  },
+  rentRate: {
+    type: Number,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  image: {
+    type: String,
+  },
 });
 
-export default mongoose.models.SubItem || mongoose.model('SubItem', subItemSchema);
+export default mongoose.models.SubItem || mongoose.model('SubItem', SubItemSchema);
