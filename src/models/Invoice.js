@@ -12,7 +12,7 @@ const invoiceSchema = new mongoose.Schema({
           item: { type: Number, },
           sleeve: { type: Number, },
           waist: { type: Number, },
-          lenth: { type: Number, },
+          length: { type: Number, },
           pantsize: { type: Number, },
         },
       ],

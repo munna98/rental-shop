@@ -1,5 +1,4 @@
-// CustomerList.js
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Table,
@@ -10,36 +9,13 @@ import {
   TableRow,
   Paper,
   Button,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
 
-// Sample list of customers
-const sampleCustomers = [
-  { id: 1, code: "CUST0001", name: "Munavir T", address: "Kavanur", mobile: "8086046399", whatsapp: "8086046399" },
-  { id: 2, code: "CUST0002", name: "Lionel Messi", address: "Rosario", mobile: "9999999999", whatsapp: "9999999999" },
-  { id: 3, code: "CUST0003", name: "Johan Cruyff", address: "Holland", mobile: "9999999999", whatsapp: "9999999999" },
-  { id: 4, code: "CUST0004", name: "Pep Guardiola", address: "Spain", mobile: "9999999999", whatsapp: "9999999999" },
-];
-
-const CustomerList = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Filter customers based on search query
-  const filteredCustomers = sampleCustomers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.mobile.includes(searchQuery) ||
-      customer.whatsapp.includes(searchQuery)
-  );
-
+const CustomerList = ({ customers, onEditCustomer, onDeleteCustomer }) => {
   return (
     <Box>
-      {/* Customer Table */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -53,9 +29,9 @@ const CustomerList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredCustomers.length > 0 ? (
-              filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
+            {customers.length > 0 ? (
+              customers.map((customer) => (
+                <TableRow key={customer._id}>
                   <TableCell>{customer.name}</TableCell>
                   <TableCell>{customer.code}</TableCell>
                   <TableCell>{customer.address}</TableCell>
@@ -66,8 +42,8 @@ const CustomerList = () => {
                       variant="outlined"
                       color="primary"
                       startIcon={<EditIcon />}
-                      sx={{ marginRight: 1 }} // Add space between buttons
-                      onClick={() => console.log("Edit", customer.id)} // Placeholder action
+                      sx={{ marginRight: 1 }}
+                      onClick={() => onEditCustomer(customer)} // Placeholder action
                     >
                       Edit
                     </Button>
@@ -75,7 +51,7 @@ const CustomerList = () => {
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteIcon />}
-                      onClick={() => console.log("Delete", customer.id)} // Placeholder action
+                      onClick={() => onDeleteCustomer(customer._id)}
                     >
                       Delete
                     </Button>

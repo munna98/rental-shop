@@ -4,7 +4,7 @@ import "../styles/global.css"; // Import global styles
 import { lightTheme, darkTheme } from "../styles/theme"; // Import custom themes
 import DashboardLayout from "../layouts/DashboardLayout"; // Import layout
 import { ItemsProvider } from "@/context/ItemsContext";
-
+import { InvoiceProvider } from "@/context/InvoiceContext"; // Import InvoiceProvider
 
 function MyApp({ Component, pageProps }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -31,11 +31,11 @@ function MyApp({ Component, pageProps }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ItemsProvider>
-        {/* Apply DashboardLayout globally and pass toggleTheme and isDarkMode */}
-        <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode}>
-          {/* Render the current page */}
-          <Component {...pageProps} />
-        </DashboardLayout>
+        <InvoiceProvider> {/* Wrap InvoiceProvider here */}
+          <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode}>
+            <Component {...pageProps} />
+          </DashboardLayout>
+        </InvoiceProvider>
       </ItemsProvider>
     </ThemeProvider>
   );

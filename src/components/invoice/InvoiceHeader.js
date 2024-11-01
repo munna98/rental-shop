@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, IconButton } from "@mui/material";
+import { Box, Typography, IconButton ,Button} from "@mui/material";
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
@@ -11,17 +11,18 @@ const InvoiceHeader = ({ invoiceNumber, onPrevious, onNext }) => {
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <IconButton onClick={onPrevious} aria-label="Previous Invoice">
+        <Button 
+            variant="outlined"  onClick={onPrevious} aria-label="Previous Invoice">
           <ChevronLeftIcon />
-        </IconButton>
+        </Button>
         
         <Typography variant="subtitle1" sx={{ margin: '0 16px' }}>
           # {invoiceNumber}
         </Typography>
         
-        <IconButton onClick={onNext} aria-label="Next Invoice">
+        <Button variant="outlined" onClick={onNext} aria-label="Next Invoice">
           <ChevronRightIcon />
-        </IconButton>
+        </Button>
       </Box>
     </Box>
   );

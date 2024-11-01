@@ -1,58 +1,122 @@
 import React from "react";
-import { TextField, MenuItem, Box, Typography, useTheme } from "@mui/material";
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Autocomplete,
+  Paper
+} from "@mui/material";
+import { useInvoice } from "@/context/InvoiceContext";
 
-const InvoiceInfo = ({
-  selectedCustomer,
-  setSelectedCustomer,
-  deliveryDate,
-  setDeliveryDate,
-  weddingDate,
-  setWeddingDate,
-  sampleCustomers = [], // Default to an empty array to avoid errors
-}) => {
-  const theme = useTheme();
+const InvoiceInfo = () => {
+  const {
+    selectedCustomer,
+    dispatch,
+    deliveryDate,
+    weddingDate,
+    customers = []
+  } = useInvoice();
+
+  const handleCustomerChange = (event, newValue) => {
+    dispatch({
+      type: "SET_CUSTOMER",
+      payload: newValue?._id || null
+    });
+  };
+
+  const handleDeliveryDateChange = (e) => {
+    dispatch({
+      type: "SET_DELIVERY_DATE",
+      payload: e.target.value,
+    });
+  };
+
+  const handleWeddingDateChange = (e) => {
+    dispatch({
+      type: "SET_WEDDING_DATE",
+      payload: e.target.value,
+    });
+  };
+
   return (
-    <Box sx={{  padding: 2, borderRadius: 2, boxShadow: 2 }}>
-      <Typography variant="h6" color="#CE5A67" gutterBottom>
-        Invoice info
-      </Typography>
-      <TextField
-        label="Customer Name"
-        value={selectedCustomer}
-        onChange={(e) => setSelectedCustomer(e.target.value)}
-        fullWidth
-        select
-        sx={{ marginBottom: 2 }}
+    <Paper 
+      elevation={2}
+      sx={{
+        p: 3,
+        borderRadius: 2
+      }}
+    >
+      <Typography 
+        variant="h6" 
+        color="#CE5A67" 
+        gutterBottom
+        sx={{ mb: 3 }}
       >
-        {sampleCustomers.length > 0 ? (
-          sampleCustomers.map((customer) => (
-            <MenuItem key={customer.id} value={customer.id}>
-              {customer.name}
-            </MenuItem>
-          ))
-        ) : (
-          <MenuItem disabled>No Customers Available</MenuItem>
-        )}
-      </TextField>
-      <TextField
-        label="Delivery Date"
-        type="date"
-        value={deliveryDate}  
-        onChange={(e) => setDeliveryDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        fullWidth
-        sx={{ marginBottom: 2 }}
-      />
-      <TextField
-        label="Wedding Date"
-        type="date"
-        value={weddingDate}
-        onChange={(e) => setWeddingDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        fullWidth
-        sx={{ marginBottom: 2 }}
-      />
+        Invoice Info
+      </Typography>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Autocomplete
+          options={customers}
+          getOptionLabel={(option) => option.name || ''}
+          value={selectedCustomer || null}
+          onChange={handleCustomerChange}
+          isOptionEqualToValue={(option, value) => option._id === value._id}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Customer Name"
+              variant="outlined"
+            />
+          )}
+          renderOption={(props, option) => (
+            <Box component="li" {...props}>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="body1">
+                  {option.name}
+                </Typography>
+                {option.email && (
+                  <Typography variant="caption" color="text.secondary">
+                    {option.email}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+          fullWidth
+          filterOptions={(options, { inputValue }) => {
+            const filterValue = inputValue.toLowerCase();
+            return options.filter(
+              option => 
+                option.name.toLowerCase().includes(filterValue) ||
+                (option.email && option.email.toLowerCase().includes(filterValue))
+            );
+          }}
+        />
+
+        <TextField
+          label="Delivery Date"
+          type="date"
+          value={deliveryDate}
+          onChange={handleDeliveryDateChange}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          fullWidth
+        />
+
+        <TextField
+          label="Wedding Date"
+          type="date"
+          value={weddingDate}
+          onChange={handleWeddingDateChange}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          fullWidth
+        />
       </Box>
+    </Paper>
   );
 };
 

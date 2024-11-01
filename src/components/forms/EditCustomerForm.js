@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/components/forms/EditCustomerForm.js
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -8,33 +9,42 @@ import {
   Button,
 } from "@mui/material";
 
-const AddCustomerForm = ({ open, handleClose, onAddCustomer }) => {
+const EditCustomerForm = ({ open, customer, handleClose, onEditCustomer }) => {
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
   const [address, setAddress] = useState("");
   const [mobile, setMobile] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [code, setCode] = useState("");
 
+  // Load customer data when form opens
+  useEffect(() => {
+    if (customer) {
+      setName(customer.name || "");
+      setAddress(customer.address || "");
+      setMobile(customer.mobile || "");
+      setWhatsapp(customer.whatsapp || "");
+      setCode(customer.code || "");
+    }
+  }, [customer]);
+
+  
   const handleSubmit = () => {
-    onAddCustomer({
+    onEditCustomer({
+      _id: customer._id,
       name,
       code,
       address,
       mobile,
       whatsapp,
     });
-    // Clear form and close modal
-    setName("");
-    setCode("");
-    setAddress("");
-    setMobile("");
-    setWhatsapp("");
     handleClose();
   };
+  console.log(customer,"custemer from edit form");
+  
 
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Add Customer</DialogTitle>
+      <DialogTitle>Edit Customer</DialogTitle>
       <DialogContent>
         <TextField
           margin="normal"
@@ -45,7 +55,7 @@ const AddCustomerForm = ({ open, handleClose, onAddCustomer }) => {
         />
         <TextField
           margin="normal"
-          label="Customer Code"
+          label="Code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           fullWidth
@@ -77,11 +87,11 @@ const AddCustomerForm = ({ open, handleClose, onAddCustomer }) => {
           Cancel
         </Button>
         <Button onClick={handleSubmit} color="primary">
-          Add
+          Save Changes
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default AddCustomerForm;
+export default EditCustomerForm;
