@@ -6,16 +6,16 @@ const StatusChip = ({ status }) => {
 
   // Determine chip color based on the status
   switch (status) {
-    case 'On Rent':
+    case 'Rented':
       color = 'primary';
       break;
-    case 'In Store':
+    case 'Available':
       color = 'success';
       break;
     case 'Damaged':
       color = 'error';
       break;
-    case 'Reserved':
+    case 'Maintanance':
       color = 'warning'; // 'warning' gives a yellow/orange color for reserved items
       break;
     default:

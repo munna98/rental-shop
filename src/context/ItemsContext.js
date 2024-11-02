@@ -29,8 +29,9 @@ export const ItemsProvider = ({ children }) => {
 
   useEffect(() => {
     fetchMasterItems();
-  }, []); // Fetch master items on initial load
-
+    fetchSubItems(); // Add this line to fetch sub items on initial load
+  }, []);
+  
   return (
     <ItemsContext.Provider value={{ itemType, setItemType, masterItems, subItems, fetchMasterItems, fetchSubItems }}>
       {children}

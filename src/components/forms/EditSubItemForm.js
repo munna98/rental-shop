@@ -10,159 +10,279 @@ import {
   Snackbar,
   Alert,
   Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import axios from "axios";
 
 const EditSubItemForm = ({ open, handleClose, item, onUpdate }) => {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [rentRate, setRentRate] = useState("");
-  const [description, setDescription] = useState("");
-  const [image, setImage] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    rentRate: "",
+    description: "",
+    image: "",
+    status: "Available"
+  });
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
   useEffect(() => {
     if (item) {
-      setMaster(item.master);
-      setName(item.name);
-      setCode(item.code);
-      setRentRate(item.rentRate);
-      setDescription(item.description);
-      setImage(item.image); // assuming the sub-item has an image property
+      setFormData({
+        name: item.name || "",
+        code: item.code || "",
+        rentRate: item.rentRate || "",
+        description: item.description || "",
+        image: item.image || "",
+        status: item.status || "Available"
+      });
+      setErrors({});
     }
   }, [item]);
 
-  const handleSnackbarClose = () => {
-    setSnackbar({ ...snackbar, open: false });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
-  const handleSubmit = async (event) => {
-    if (event) event.preventDefault();
-    try {
-      const updatedItemData = {
-        _id: item._id,
-        name,
-        code,
-        rentRate,
-        description,
-        image,
-        master: item.master, // Preserve the master reference
-        status: item.status, // Preserve the status
-      };
-
-      const response = await axios.put(`/api/sub-items/${item._id}`, updatedItemData);
-
-      // Create complete updated item including _id and all data
-      // Pass the complete updated item back
-      onUpdate(updatedItemData);
-      
-      setSnackbar({
-        open: true,
-        message: "Sub item updated successfully!",
-        severity: "success",
-      });
-
-      handleClose(); // Close the dialog after submission
-    } catch (error) {
-      console.error("Error updating sub item:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update sub item.",
-        severity: "error",
-      });
-    }
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.code.trim()) newErrors.code = "Code is required";
+    if (!formData.rentRate) newErrors.rentRate = "Rent rate is required";
+    if (parseFloat(formData.rentRate) <= 0) newErrors.rentRate = "Rent rate must be greater than 0";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+      if (file.size > 5000000) { // 5MB limit
+        setSnackbar({
+          open: true,
+          message: "Image size should be less than 5MB",
+          severity: "error",
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result);
+        setFormData(prev => ({
+          ...prev,
+          image: reader.result
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  console.log(item,"item");
-  
+  const handleSubmit = async () => {
+    try {
+      if (!validateForm()) return;
+      
+      setLoading(true);
+      const updatedItemData = {
+        ...formData,
+        rentRate: parseFloat(formData.rentRate),
+        master: item.master._id // Preserve the master reference
+      };
+
+      const response = await axios.put(`/api/sub-items/${item._id}`, updatedItemData);
+      
+      if (response.data) {
+        setSnackbar({
+          open: true,
+          message: "Sub item updated successfully!",
+          severity: "success",
+        });
+        
+        // Pass the complete updated item back to parent
+        onUpdate(response.data);
+        handleClose();
+      }
+    } catch (error) {
+      console.error("Error updating sub item:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to update sub item",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const statusOptions = ["Available", "Damaged", "Maintanance"];
+
   return (
     <>
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog 
+        open={open} 
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Edit Sub Item</DialogTitle>
         <DialogContent>
+          {/* Master Item Display */}
           <TextField
             margin="normal"
             label="Master Item"
-            value={item?.master.name}
+            value={item?.master?.name || ""}
             fullWidth
             disabled
           />
+
+          {/* Name Field */}
           <TextField
             margin="normal"
             label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
             fullWidth
+            required
+            error={!!errors.name}
+            helperText={errors.name}
           />
+
+          {/* Code Field */}
           <TextField
             margin="normal"
             label="Code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
+            name="code"
+            value={formData.code}
+            onChange={handleChange}
             fullWidth
+            required
+            disabled
+            error={!!errors.code}
+            helperText={errors.code}
           />
+
+          {/* Rent Rate Field */}
           <TextField
             margin="normal"
             label="Rent Rate"
-            value={rentRate}
-            onChange={(e) => setRentRate(e.target.value)}
+            name="rentRate"
+            value={formData.rentRate}
+            onChange={handleChange}
             fullWidth
+            required
+            type="number"
+            error={!!errors.rentRate}
+            helperText={errors.rentRate}
+            InputProps={{
+              startAdornment: <Typography>₹</Typography>,
+            }}
           />
+
+          {/* Description Field */}
           <TextField
             margin="normal"
             label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
             fullWidth
-            multiline
+            // multiline
+            rows={3}
           />
+
+          {/* Status Field */}
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="status-label">Status</InputLabel>
+            <Select
+              labelId="status-label"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              label="Status"
+            >
+              {statusOptions.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Image Upload */}
           <input
             accept="image/*"
             style={{ display: "none" }}
-            id="image-upload"
+            id="edit-image-upload"
             type="file"
             onChange={handleImageChange}
           />
-          <label htmlFor="image-upload">
-            <IconButton component="span">
+          <label htmlFor="edit-image-upload">
+            <IconButton component="span" color="primary">
               <AttachFileIcon />
             </IconButton>
-            <Typography variant="body2">Upload Image</Typography>
+            <Typography variant="body2" component="span">
+              Upload Image
+            </Typography>
           </label>
-          {image && (
+          {formData.image && (
             <img
-              src={image}
+              src={formData.image}
               alt="Sub Item"
-              style={{ width: "25%", marginTop: 10 }}
+              style={{ 
+                width: "100%", 
+                maxHeight: 200, 
+                objectFit: "contain", 
+                marginTop: 10 
+              }}
             />
           )}
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleClose} color="primary">
+          <Button 
+            onClick={handleClose} 
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} color="primary">
-            Update Sub Item
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            color="primary"
+            disabled={loading}
+          >
+            {loading ? "Updating..." : "Update Sub Item"}
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Snackbar for success and error messages */}
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

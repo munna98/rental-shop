@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { generateWhatsAppLink } from '@/services/whatsapp';
+import { saveInvoice } from '@/services/api';
 import { useInvoice } from '@/context/InvoiceContext';
 
 const InvoiceSummary = () => {
@@ -12,44 +13,85 @@ const InvoiceSummary = () => {
     selectedItems,
     deliveryDate,
     weddingDate,
-    customers,
   } = useInvoice();
 
-  // Find customer details based on selectedCustomer
   const customerDetails = selectedCustomer;
 
-  const handleSaveAndSendWhatsApp = () => {
+  const handleSave = async () => {
     if (!customerDetails) {
       alert("Please select a customer to proceed.");
       return;
     }
 
-    // Map items with the correct measurement structure
-    const formattedItems = selectedItems.map(item => ({
-      name: item.name,
-      measurement: item.measurement || [
-        {
-          item: '',
-          sleeve: '',
-          waist: '',
-          length: '',
-          pantsize: '',
-        }
-      ],
-      rentRate: item.rentRate
-    }));
+    try {
+      const invoiceData = {
+        invoiceNumber,
+        customer: selectedCustomer,
+        items: selectedItems.map(item => ({
+          ...item,
+          measurement: item.measurement || [
+            {
+              item: '',
+              sleeve: '',
+              waist: '',
+              length: '',
+              pantsize: '',
+            }
+          ],
+        })),
+        totalAmount,
+        deliveryDate,
+        weddingDate,
+      };
 
-    const whatsappMessage = generateWhatsAppLink({
-      invoiceNumber,
-      customerName: customerDetails.name,
-      customer: customerDetails.mobile,
-      items: formattedItems,
-      totalAmount,
-      deliveryDate,
-      weddingDate
-    });
+      await saveInvoice(invoiceData);
+      alert('Invoice saved successfully!');
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      alert('Failed to save invoice. Please try again.');
+    }
+  };
 
-    window.open(whatsappMessage, '_blank');
+  const handleSaveAndSendWhatsApp = async () => {
+    if (!customerDetails) {
+      alert("Please select a customer to proceed.");
+      return;
+    }
+
+    try {
+      // First save the invoice
+      await handleSave();
+
+      // Then generate and open WhatsApp link
+      const formattedItems = selectedItems.map(item => ({
+        name: item.name,
+        measurement: item.measurement || [
+          {
+            item: '',
+            sleeve: '',
+            waist: '',
+            length: '',
+            pantsize: '',
+          }
+        ],
+        rentRate: item.rentRate
+      }));
+
+      const whatsappMessage = generateWhatsAppLink({
+        invoiceNumber,
+        customerName: customerDetails.name,
+        customer: customerDetails.mobile,
+        items: formattedItems,
+        totalAmount,
+        deliveryDate,
+        weddingDate
+      });
+
+      window.open(whatsappMessage, '_blank');
+    } catch (error) {
+      console.error('Error in save and send:', error);
+      alert('Failed to complete the operation. Please try again.');
+    }
   };
 
   return (
@@ -103,8 +145,23 @@ const InvoiceSummary = () => {
           Total Amount: ₹{totalAmount.toLocaleString()}
         </Typography>
       </Box>
-
+      
       <Box sx={{ display: 'flex', gap: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSave}
+          fullWidth
+          disabled={!customerDetails}
+          sx={{
+            backgroundColor: '#CE5A67',
+            '&:hover': {
+              backgroundColor: '#b44851',
+            },
+          }}
+        >
+          Save Invoice
+        </Button>
         <Button
           variant="contained"
           color="primary"

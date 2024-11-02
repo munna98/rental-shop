@@ -1,6 +1,4 @@
-// src/pages/ItemsPage.js
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -16,37 +14,29 @@ import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import AddMasterItemForm from "@/components/forms/AddMasterItemForm";
 import StyledButton from "@/components/buttons/StyledButton";
-import axios from 'axios';
 import MasterItems from "@/components/items/MasterItems";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import SubItems from "@/components/items/SubItems";
-
+import { useItems } from "@/context/ItemsContext"; // Import the context hook
 
 const ItemsPage = () => {
-  const [itemType, setItemType] = useState("Sub Items");
+  // Get values from context
+  const { 
+    itemType, 
+    setItemType, 
+    masterItems, 
+    subItems, 
+    fetchMasterItems, 
+    fetchSubItems 
+  } = useItems();
+
+  // Local state
   const [open, setOpen] = useState(false);
   const [openSubItem, setOpenSubItem] = useState(false);
-  const [masterItems, setMasterItems] = useState([]);
-  const [subItems, setSubItems] = useState([]);
   const [selectedMaster, setSelectedMaster] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");  
-
-  const onAddNewMasterItem = (newItem) => {
-    setMasterItems((prevItems) => [...prevItems, newItem]);
-  };
-
-  const handleUpdateMasterItem = (updatedItem) => {
-    setMasterItems((prevItems) =>
-      prevItems.map((item) => (item._id === updatedItem._id ? updatedItem : item))
-    );
-  };
-
-  const handleUpdateSubItem = (updatedItem) => {
-    setSubItems((prevItems) =>
-      prevItems.map((item) => (item._id === updatedItem._id ? updatedItem : item))
-    );
-  };
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // Added for search functionality
 
   const handleItemTypeChange = (event) => {
     setItemType(event.target.value);
@@ -60,52 +50,56 @@ const ItemsPage = () => {
     setOpen(false);
   };
 
-  const fetchMasterItems = async () => {
-    try {
-      const response = await axios.get('/api/master-items');
-      setMasterItems(response.data);
-    } catch (error) {
-      console.error("Error fetching master items:", error);
-    }
-  };
-
-  const fetchSubItems = async () => {
-    try {
-      const response = await axios.get('/api/sub-items');
-      setSubItems(response.data);
-    } catch (error) {
-      console.error("Error fetching sub items:", error);
-    }
-  };
-
   const handleAddSubItemClose = () => {
     setOpenSubItem(false);
   };
 
-  const handleAddSubItem = (newSubItem) => {
-    setSubItems((prevSubItems) => [...prevSubItems, newSubItem]);
-    setSnackbarMessage("Sub item added successfully!");
-    setSnackbarOpen(true);
+  const handleAddMasterItem = async (newItem) => {
+    try {
+      await axios.post('/api/master-items', newItem);
+      fetchMasterItems(); // Refresh master items
+      setSnackbarMessage("Master item added successfully!");
+      setSnackbarOpen(true);
+      handleAddMasterItemClose();
+    } catch (error) {
+      console.error("Error adding master item:", error);
+      setSnackbarMessage("Failed to add master item");
+      setSnackbarOpen(true);
+    }
   };
 
-  const handleDeleteMasterItem = (id) => {
-    setMasterItems((prevItems) => prevItems.filter((item) => item._id !== id));
+  const handleAddSubItem = async (newSubItem) => {
+    try {
+      await axios.post('/api/sub-items', newSubItem);
+      fetchSubItems(); // Refresh sub items
+      setSnackbarMessage("Sub item added successfully!");
+      setSnackbarOpen(true);
+      handleAddSubItemClose();
+    } catch (error) {
+      console.error("Error adding sub item:", error);
+      setSnackbarMessage("Failed to add sub item");
+      setSnackbarOpen(true);
+    }
   };
 
-  const handleDeleteSubItem = (id) => {
-    setSubItems((prevItems) => prevItems.filter((item) => item._id !== id));
-  };
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
 
-  useEffect(() => {
-    if (itemType === "Sub Items") {
-      fetchSubItems();
-    } else if (itemType === "Master Items") {
-      fetchMasterItems();
-    }
-  }, [itemType]);
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  // Filter items based on search query
+  const filteredMasterItems = masterItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredSubItems = subItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
@@ -129,6 +123,8 @@ const ItemsPage = () => {
           <TextField
             variant="outlined"
             placeholder="Search items..."
+            value={searchQuery}
+            onChange={handleSearchChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -147,35 +143,27 @@ const ItemsPage = () => {
 
       {itemType === "Master Items" ? (
         <MasterItems 
-          items={masterItems} 
           selectedMaster={selectedMaster}
           setSelectedMaster={setSelectedMaster}
-          onDelete={handleDeleteMasterItem} 
-          onUpdate={handleUpdateMasterItem} 
         />
       ) : (
-        <SubItems 
-        items={subItems}
-        onDelete={handleDeleteSubItem} 
-        onUpdate={handleUpdateSubItem}         
-        masterItems={masterItems}
-        />
+        <SubItems />
       )}
 
       <AddMasterItemForm 
         open={open} 
         handleClose={handleAddMasterItemClose} 
-        onAddNewMasterItem={onAddNewMasterItem} 
+        onAddNewMasterItem={handleAddMasterItem} 
       />
 
       <AddSubItemForm
         open={openSubItem}
         handleClose={handleAddSubItemClose}
         masterItems={masterItems}
+        selectedMaster={selectedMaster}
         onAdd={handleAddSubItem}
       />
 
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}
         onClose={handleSnackbarClose}

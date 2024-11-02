@@ -1,5 +1,4 @@
-// src/components/items/SubItems.js
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -12,6 +11,11 @@ import {
   Button,
   Snackbar,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Box,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -19,17 +23,32 @@ import StatusChip from "@/components/StatusChip";
 import { useConfirmation } from "@/hooks/useConfirmation";
 import EditSubItemForm from "../forms/EditSubItemForm";
 import axios from "axios";
+import { useItems } from "@/context/ItemsContext";
 
-const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
-  const [openEdit, setOpenEdit] = useState(false); // State for edit form
-  const [currentItem, setCurrentItem] = useState(null); // Track the current item being edited
+const SubItems = () => {
+  const [openEdit, setOpenEdit] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [selectedMasterFilter, setSelectedMasterFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
+  // Get context values
+  const { subItems, masterItems, fetchSubItems } = useItems();
+  
   const { showConfirmation, ConfirmationDialog } = useConfirmation();
+
+  // // Filtered items based on selected master item and status
+  // const filteredItems = useMemo(() => {
+  //   return subItems.filter(item => {
+  //     const masterMatch = selectedMasterFilter === "all" || item.masterId === selectedMasterFilter;
+  //     const statusMatch = statusFilter === "all" || item.status === statusFilter;
+  //     return masterMatch && statusMatch;
+  //   });
+  // }, [subItems, selectedMasterFilter, statusFilter]);
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
@@ -42,8 +61,7 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
     if (isConfirmed) {
       try {
         await axios.delete(`/api/sub-items/${id}`);
-        // Call the onDelete prop to update sub items in ItemsPage
-        onDelete(id);
+        fetchSubItems();
 
         setSnackbar({
           open: true,
@@ -66,21 +84,62 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
     setOpenEdit(true);
   };
 
-  const handleUpdate = (updatedItem) => {
-    onUpdate(updatedItem); // Call the onUpdate prop to update the item in ItemsPage
-    setSnackbar({
-      open: true,
-      message: "Item updated successfully!",
-      severity: "success",
-    });
-    console.log(updatedItem,"tyuio");
-    
+  const handleUpdate = async (updatedItem) => {
+    try {
+      await axios.put(`/api/sub-items/${updatedItem._id}`, updatedItem);
+      fetchSubItems();
+      setSnackbar({
+        open: true,
+        message: "Item updated successfully!",
+        severity: "success",
+      });
+      setOpenEdit(false);
+    } catch (error) {
+      console.error("Error updating sub item:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to update sub item.",
+        severity: "error",
+      });
+    }
   };
 
   const handleEditClose = () => setOpenEdit(false);
 
   return (
     <>
+      {/* <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+        <FormControl variant="outlined" sx={{ minWidth: 200 }}>
+          <InputLabel>Filter by Master Item</InputLabel>
+          <Select
+            value={selectedMasterFilter}
+            onChange={(e) => setSelectedMasterFilter(e.target.value)}
+            label="Filter by Master Item"
+          >
+            <MenuItem value="all">All Master Items</MenuItem>
+            {masterItems.map((master) => (
+              <MenuItem key={master._id} value={master._id}>
+                {master.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl variant="outlined" sx={{ minWidth: 150 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            label="Status"
+          >
+            <MenuItem value="all">All Statuses</MenuItem>
+            <MenuItem value="available">Available</MenuItem>
+            <MenuItem value="rented">Rented</MenuItem>
+            <MenuItem value="maintenance">Maintenance</MenuItem>
+          </Select>
+        </FormControl>
+      </Box> */}
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -88,6 +147,7 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
               <TableCell sx={{ fontWeight: "bold" }}>Image</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Item Name</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Code</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Master Item</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Rent Rate</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Description</TableCell>
@@ -97,10 +157,11 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map(
-              (
-                item // Render items from props
-              ) => (
+            {subItems.map((item) => {
+              // const masterItem = masterItems.find(master => master._id === item.masterId);
+              // console.log(masterItem,"masateritem");
+              
+              return (
                 <TableRow key={item._id}>
                   <TableCell>
                     <Avatar
@@ -111,9 +172,10 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
                   </TableCell>
                   <TableCell>{item.name}</TableCell>
                   <TableCell>{item.code}</TableCell>
+                  <TableCell>{item.master.name || 'Unknown'}</TableCell>
                   <TableCell>{`₹${item.rentRate}`}</TableCell>
                   <TableCell>
-                    <StatusChip status={item.status} /> {/* Use StatusChip */}
+                    <StatusChip status={item.status} />
                   </TableCell>
                   <TableCell>{item.description}</TableCell>
                   <TableCell align="center">
@@ -121,8 +183,8 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
                       variant="outlined"
                       color="primary"
                       startIcon={<EditIcon />}
-                      sx={{ marginRight: 1 }} // Add space between buttons
-                      onClick={() => handleEditOpen(item)} // Call the onEdit function with the item
+                      sx={{ marginRight: 1 }}
+                      onClick={() => handleEditOpen(item)}
                     >
                       Edit
                     </Button>
@@ -136,8 +198,8 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
                     </Button>
                   </TableCell>
                 </TableRow>
-              )
-            )}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -147,7 +209,7 @@ const SubItems = ({ items, onUpdate, onDelete, masterItems}) => {
         handleClose={handleEditClose} 
         item={currentItem} 
         masterItems={masterItems}
-        onUpdate={handleUpdate} // Pass the update handler
+        onUpdate={handleUpdate}
       />
 
       <Snackbar

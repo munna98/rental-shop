@@ -1,4 +1,3 @@
-// src/components/items/MasterItems.js
 import React, { useState } from "react";
 import {
   Table,
@@ -20,12 +19,16 @@ import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import axios from 'axios';
 import { useConfirmation } from "@/hooks/useConfirmation";
 import EditMasterItemForm from "@/components/forms/EditMasterItemForm";
+import { useItems } from "@/context/ItemsContext"; // Import the context hook
 
-const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMaster}) => {
+const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
   const [open, setOpen] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false); // State for edit form
-  const [currentItem, setCurrentItem] = useState(null); // Track the current item being edited
+  const [openEdit, setOpenEdit] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  
+  // Get context values
+  const { masterItems, fetchMasterItems, fetchSubItems } = useItems();
   
   const { showConfirmation, ConfirmationDialog } = useConfirmation();
 
@@ -40,8 +43,9 @@ const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMas
     if (isConfirmed) {
       try {
         await axios.delete(`/api/master-items/${id}`);
-        // Call the onDelete prop to update master items in ItemsPage
-        onDelete(id);
+        // Fetch updated items after deletion
+        fetchMasterItems();
+        fetchSubItems(); // Also fetch sub-items as they might be affected
 
         setSnackbar({
           open: true,
@@ -64,19 +68,29 @@ const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMas
     setOpenEdit(true);
   };
 
-  const handleUpdate = (updatedItem) => {
-    onUpdate(updatedItem); // Call the onUpdate prop to update the item in ItemsPage
-    setSnackbar({
-      open: true,
-      message: "Item updated successfully!",
-      severity: "success",
-    });
+  const handleUpdate = async (updatedItem) => {
+    try {
+      await axios.put(`/api/master-items/${updatedItem._id}`, updatedItem);
+      fetchMasterItems(); // Fetch updated items
+      setSnackbar({
+        open: true,
+        message: "Item updated successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error updating master item:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to update master item.",
+        severity: "error",
+      });
+    }
   };
 
   const handleAddSubItemOpen = (item) => {
-    setOpen(true)
-    setSelectedMaster(item._id)
-    };
+    setOpen(true);
+    setSelectedMaster(item._id);
+  };
 
   const handleAddSubItemClose = () => setOpen(false);
   const handleEditClose = () => setOpenEdit(false);
@@ -94,7 +108,7 @@ const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMas
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((item) => (
+            {masterItems.map((item) => (
               <TableRow key={item._id}>
                 <TableCell>
                   <Avatar alt={item.name} src={item.image} sx={{ width: 56, height: 56 }} />
@@ -123,7 +137,7 @@ const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMas
                     variant="outlined"
                     color="success"
                     startIcon={<AddIcon />}
-                    onClick={() =>handleAddSubItemOpen(item)}
+                    onClick={() => handleAddSubItemOpen(item)}
                     sx={{ marginLeft: 1 }}
                   >
                     Add 
@@ -138,15 +152,15 @@ const MasterItems = ({ items, onDelete, onUpdate, selectedMaster, setSelectedMas
       <AddSubItemForm 
         open={open} 
         handleClose={handleAddSubItemClose} 
-        masterItems={items} 
+        masterItems={masterItems} 
         selectedMaster={selectedMaster}
-        onAdd={() => {}} // Pass the handler to the add form (update accordingly if needed)
+        onAdd={fetchSubItems} // Pass the fetchSubItems function to refresh after adding
       />
       <EditMasterItemForm 
         open={openEdit} 
         handleClose={handleEditClose} 
         item={currentItem} 
-        onUpdate={handleUpdate} // Pass the update handler
+        onUpdate={handleUpdate}
       />
 
       <Snackbar

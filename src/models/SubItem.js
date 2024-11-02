@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const SubItemSchema = new mongoose.Schema({
   master: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MasterItem', // Reference the MasterItem model
+    ref: 'MasterItem',
     required: true,
   },
   name: {
@@ -20,11 +20,15 @@ const SubItemSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
   },
   image: {
     type: String,
   },
+  status: {
+    type: String,
+    enum: ['Available', 'Rented', 'Damaged', 'Maintanance'],
+    default: 'Available'
+  }
 });
 
 export default mongoose.models.SubItem || mongoose.model('SubItem', SubItemSchema);

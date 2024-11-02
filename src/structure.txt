@@ -2,33 +2,36 @@ Folder PATH listing
 Volume serial number is FEA0-7037
 C:.
 ³   .env
-³   FolderList.txt
 ³   structure.txt
 ³   
 ÃÄÄÄcomponents
-³   ³   CustomerList.js
-³   ³   CustomSnackbar.js
 ³   ³   StatusChip.js
 ³   ³   
 ³   ÃÄÄÄbuttons
 ³   ³       StyledButton.js
 ³   ³       
+³   ÃÄÄÄcustomers
+³   ³       CustomerList.js
+³   ³       
 ³   ÃÄÄÄforms
 ³   ³       AddCustomerForm.js
 ³   ³       AddMasterItemForm.js
 ³   ³       AddSubItemForm.js
+³   ³       EditCustomerForm.js
+³   ³       EditMasterItemForm.js
+³   ³       EditSubItemForm.js
 ³   ³       
 ³   ÃÄÄÄinvoice
 ³   ³       InvoiceHeader.js
 ³   ³       InvoiceInfo.js
 ³   ³       InvoiceSummary.js
 ³   ³       ItemSelection.js
+³   ³       PaymentDetails.js
 ³   ³       SelectedItems.js
 ³   ³       
 ³   ÃÄÄÄitems
-³   ³       DeleteItem.js
 ³   ³       MasterItems.js
-³   ³       SubItem.js
+³   ³       SubItems.js
 ³   ³       
 ³   ÀÄÄÄmodals
 ³           ConfirmationModal.js
@@ -37,6 +40,7 @@ C:.
 ³       db.js
 ³       
 ÃÄÄÄcontext
+³       InvoiceContext.js
 ³       ItemsContext.js
 ³       
 ÃÄÄÄhooks
@@ -66,6 +70,7 @@ C:.
 ³   ÀÄÄÄapi
 ³       ÃÄÄÄcustomers
 ³       ³       index.js
+³       ³       [id].js
 ³       ³       
 ³       ÃÄÄÄinvoices
 ³       ³       index.js
@@ -76,8 +81,10 @@ C:.
 ³       ³       
 ³       ÀÄÄÄsub-items
 ³               index.js
+³               [id].js
 ³               
 ÃÄÄÄservices
+³       api.js
 ³       whatsapp.js
 ³       
 ÃÄÄÄstyles

@@ -13,6 +13,12 @@ const initialState = {
   totalAmount: 0,
   customers: [],
   items: [],
+  paymentDetails: {
+    advanceAmount: 0,
+    paymentMethod: "cash",
+    paymentStatus: "pending",
+    notes: "",
+  },
   loading: true,
   error: null,
 };
@@ -34,7 +40,7 @@ const invoiceReducer = (state, action) => {
       // Ensure unique identifier for the item
       const newItem = {
         ...action.payload,
-        uniqueId: Date.now().toString() // Add a unique identifier
+        uniqueId: Date.now().toString(), // Add a unique identifier
       };
       return {
         ...state,
@@ -50,7 +56,8 @@ const invoiceReducer = (state, action) => {
         selectedItems: state.selectedItems.filter(
           (item) => item.uniqueId !== action.payload
         ),
-        totalAmount: state.totalAmount - (removedItem ? removedItem.rentRate : 0),
+        totalAmount:
+          state.totalAmount - (removedItem ? removedItem.rentRate : 0),
       };
     case "SET_CUSTOMERS":
       return { ...state, customers: action.payload };
@@ -73,6 +80,19 @@ const invoiceReducer = (state, action) => {
         invoiceNumber: `INV${
           parseInt(state.invoiceNumber.replace("INV", "")) - 1
         }`,
+      };
+    case "UPDATE_PAYMENT_DETAILS":
+      return {
+        ...state,
+        paymentDetails: {
+          ...state.paymentDetails,
+          ...action.payload,
+        },
+      };
+    case "RESET_PAYMENT_DETAILS":
+      return {
+        ...state,
+        paymentDetails: initialState.paymentDetails,
       };
     default:
       return state;
@@ -126,6 +146,10 @@ export const InvoiceProvider = ({ children }) => {
         handleAddItem,
         handleRemoveItem,
         dispatch,
+        updatePaymentDetails: (details) => 
+          dispatch({ type: "UPDATE_PAYMENT_DETAILS", payload: details }),
+        resetPaymentDetails: () => 
+          dispatch({ type: "RESET_PAYMENT_DETAILS" }),
       }}
     >
       {children}

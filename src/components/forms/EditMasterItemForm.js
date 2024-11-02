@@ -72,6 +72,7 @@ const EditMasterItemForm = ({ open, handleClose, item, onUpdate }) => {
             variant="outlined"
             value={itemCode}
             onChange={(e) => setItemCode(e.target.value)}
+            disabled
           />
         </DialogContent>
         <DialogActions>
