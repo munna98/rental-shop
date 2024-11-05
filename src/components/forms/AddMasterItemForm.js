@@ -1,102 +1,82 @@
-// src/components/forms/AddMasterItemForm.js
 import React, { useState } from "react";
-import { Modal, Box, TextField, Button, Typography, Snackbar, Alert } from "@mui/material";
-import axios from 'axios';
+import { 
+  Modal, 
+  Box, 
+  TextField, 
+  Button, 
+  Typography 
+} from "@mui/material";
 
 const AddMasterItemForm = ({ open, handleClose, onAddNewMasterItem }) => {
   const [itemName, setItemName] = useState("");
   const [itemCode, setItemCode] = useState("");
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-
-  const handleSnackbarClose = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    try {
-      const response = await axios.post('/api/master-items', {
-        name: itemName,
-        code: itemCode,
-      });
+    
+    onAddNewMasterItem({
+      name: itemName,
+      code: itemCode,
+    });
 
-      onAddNewMasterItem(response.data); // Call the function passed from ItemsPage
-
-      // Show success snackbar
-      setSnackbar({
-        open: true,
-        message: "Master item added successfully!",
-        severity: "success",
-      });
-
-      handleClose();
-      setItemName("");
-      setItemCode("");
-    } catch (error) {
-      console.error("Error adding master item:", error);
-      
-      // Show error snackbar
-      setSnackbar({
-        open: true,
-        message: "Failed to add master item.",
-        severity: "error",
-      });
-    }
+    // Clear form
+    setItemName("");
+    setItemCode("");
   };
 
   return (
-    <>
-      <Modal open={open} onClose={handleClose}>
-        <Box
-          sx={{
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            padding: 4,
-            width: 400,
-            margin: "auto",
-            marginTop: "10%",
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Add New Master Item
-          </Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Item Name"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              required
-            />
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Item Code"
-              value={itemCode}
-              onChange={(e) => setItemCode(e.target.value)}
-              required
-            />
-            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="add-master-item-modal"
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 400,
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" component="h2" gutterBottom>
+          Add New Master Item
+        </Typography>
+        
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="Item Name"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            margin="normal"
+            required
+          />
+          
+          <TextField
+            fullWidth
+            label="Item Code"
+            value={itemCode}
+            onChange={(e) => setItemCode(e.target.value)}
+            margin="normal"
+            required
+          />
+          
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" color="primary">
               Add Item
             </Button>
-          </form>
-        </Box>
-      </Modal>
-
-      {/* Snackbar for success and error messages */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </>
+          </Box>
+        </form>
+      </Box>
+    </Modal>
   );
 };
 

@@ -1,4 +1,3 @@
-// src/components/forms/EditMasterItemForm.js
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
@@ -7,15 +6,14 @@ import {
   DialogActions,
   Button,
   TextField,
-  Snackbar,
-  Alert,
 } from "@mui/material";
+import { useSnackbar } from "@/hooks/useSnackbar";
 import axios from "axios";
 
 const EditMasterItemForm = ({ open, handleClose, item, onUpdate }) => {
   const [itemName, setItemName] = useState("");
   const [itemCode, setItemCode] = useState("");
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
 
   useEffect(() => {
     if (item) {
@@ -27,27 +25,19 @@ const EditMasterItemForm = ({ open, handleClose, item, onUpdate }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await axios.put(`/api/master-items/${item._id}`, { name: itemName, code: itemCode });
-      onUpdate({ ...item, name: itemName, code: itemCode });
-
-      setSnackbar({
-        open: true,
-        message: "Item updated successfully!",
-        severity: "success",
+      await axios.put(`/api/master-items/${item._id}`, {
+        name: itemName,
+        code: itemCode,
       });
       
+      onUpdate({ ...item, name: itemName, code: itemCode });
+      showSnackbar("Item updated successfully!", "success");
       handleClose();
     } catch (error) {
       console.error("Error updating master item:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update master item.",
-        severity: "error",
-      });
+      showSnackbar("Failed to update master item.", "error");
     }
   };
-
-  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   return (
     <>
@@ -85,17 +75,7 @@ const EditMasterItemForm = ({ open, handleClose, item, onUpdate }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for update success or error messages */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <SnackbarComponent />
     </>
   );
 };

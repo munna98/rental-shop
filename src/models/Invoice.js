@@ -27,7 +27,7 @@ const measurementSchema = new mongoose.Schema({
 const invoiceItemSchema = new mongoose.Schema({
   item: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Subitem', 
+    ref: 'SubItem', 
     required: true 
   },
   measurement: {
@@ -71,29 +71,26 @@ const invoiceSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  status: {
-    type: String,
-    enum: ['pending', 'delivered', 'returned', 'cancelled'],
-    default: 'pending'
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'partial', 'completed'],
-    default: 'pending'
-  },
-  advanceAmount: {
+  receipts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Receipt'
+  }],
+  
+  // Add fields to track payment
+  paidAmount: {
     type: Number,
     default: 0
   },
   balanceAmount: {
     type: Number,
     default: function() {
-      return this.totalAmount - this.advanceAmount;
+      return this.totalAmount - this.paidAmount;
     }
   },
-  notes: {
+  paymentStatus: {
     type: String,
-    trim: true
+    enum: ['pending', 'completed'],
+    default: 'pending'
   },
   createdAt: { 
     type: Date, 

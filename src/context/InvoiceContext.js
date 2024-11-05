@@ -1,11 +1,11 @@
 // src/context/InvoiceContext.js
 import React, { createContext, useReducer, useContext, useEffect } from "react";
-import { fetchCustomers, fetchItems } from "@/services/api";
+import { fetchCustomers, fetchItems, fetchLastInvoiceNumber } from "@/services/api";
 
 const InvoiceContext = createContext();
 
 const initialState = {
-  invoiceNumber: "INV0001",
+  invoiceNumber: "INV001",
   selectedItems: [],
   selectedCustomer: null,
   deliveryDate: "",
@@ -13,10 +13,9 @@ const initialState = {
   totalAmount: 0,
   customers: [],
   items: [],
-  paymentDetails: {
+  receiptDetails: {
     advanceAmount: 0,
-    paymentMethod: "cash",
-    paymentStatus: "pending",
+    receiptMethod: "cash",
     notes: "",
   },
   loading: true,
@@ -25,6 +24,28 @@ const initialState = {
 
 const invoiceReducer = (state, action) => {
   switch (action.type) {
+    case "SET_INVOICE_NUMBER":
+      return {
+        ...state,
+        invoiceNumber: action.payload,
+      };
+    
+    case "NEXT_INVOICE":
+      const currentNumber = parseInt(state.invoiceNumber.replace("INV", ""));
+      return {
+        ...state,
+        invoiceNumber: `INV${(currentNumber + 1).toString().padStart(3, '0')}`,
+      };
+    
+    case "PREVIOUS_INVOICE":
+      const prevNumber = parseInt(state.invoiceNumber.replace("INV", ""));
+      if (prevNumber > 1) {
+        return {
+          ...state,
+          invoiceNumber: `INV${(prevNumber - 1).toString().padStart(3, '0')}`,
+        };
+      }
+      return state;
     case "SET_CUSTOMER":
       return {
         ...state,
@@ -81,18 +102,18 @@ const invoiceReducer = (state, action) => {
           parseInt(state.invoiceNumber.replace("INV", "")) - 1
         }`,
       };
-    case "UPDATE_PAYMENT_DETAILS":
+    case "UPDATE_RECEIPT_DETAILS":
       return {
         ...state,
-        paymentDetails: {
-          ...state.paymentDetails,
+        receiptDetails: {
+          ...state.receiptDetails,
           ...action.payload,
         },
       };
-    case "RESET_PAYMENT_DETAILS":
+    case "RESET_RECEIPT_DETAILS":
       return {
         ...state,
-        paymentDetails: initialState.paymentDetails,
+        receiptDetails: initialState.receiptDetails,
       };
     default:
       return state;
@@ -102,14 +123,46 @@ const invoiceReducer = (state, action) => {
 export const InvoiceProvider = ({ children }) => {
   const [state, dispatch] = useReducer(invoiceReducer, initialState);
 
+  const refreshInvoiceNumber = async () => {
+    try {
+      const lastInvoiceNumber = await fetchLastInvoiceNumber();
+      const lastNumber = parseInt(lastInvoiceNumber.replace("INV", ""));
+      const nextInvoiceNumber = `INV${(lastNumber + 1).toString().padStart(3, '0')}`;
+      dispatch({ type: "SET_INVOICE_NUMBER", payload: nextInvoiceNumber });
+    } catch (error) {
+      console.error("Failed to refresh invoice number", error);
+    }
+  };
+
+  const fetchReceiptsForInvoice = async (invoiceId) => {
+    try {
+      const response = await fetch(`/api/receipts?invoiceId=${invoiceId}`);
+      if (!response.ok) throw new Error('Failed to fetch receipts');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       dispatch({ type: "SET_LOADING", payload: true });
       try {
-        const fetchedCustomers = await fetchCustomers();
-        const fetchedItems = await fetchItems();
+        const [fetchedCustomers, fetchedItems, lastInvoiceNumber] = await Promise.all([
+          fetchCustomers(),
+          fetchItems(),
+          fetchLastInvoiceNumber()
+        ]);
+
         dispatch({ type: "SET_CUSTOMERS", payload: fetchedCustomers });
         dispatch({ type: "SET_ITEMS", payload: fetchedItems });
+        
+        // Set the next invoice number based on the last invoice
+        const lastNumber = parseInt(lastInvoiceNumber.replace("INV", ""));
+        const nextInvoiceNumber = `INV${(lastNumber + 1).toString().padStart(3, '0')}`;
+        dispatch({ type: "SET_INVOICE_NUMBER", payload: nextInvoiceNumber });
+
       } catch (error) {
         console.error("Failed to fetch data", error);
         dispatch({ type: "SET_ERROR", payload: "Failed to fetch data" });
@@ -146,10 +199,12 @@ export const InvoiceProvider = ({ children }) => {
         handleAddItem,
         handleRemoveItem,
         dispatch,
-        updatePaymentDetails: (details) => 
-          dispatch({ type: "UPDATE_PAYMENT_DETAILS", payload: details }),
-        resetPaymentDetails: () => 
-          dispatch({ type: "RESET_PAYMENT_DETAILS" }),
+        refreshInvoiceNumber,
+        fetchReceiptsForInvoice,
+        updateReceiptDetails: (details) => 
+          dispatch({ type: "UPDATE_RECEIPT_DETAILS", payload: details }),
+        resetReceiptDetails: () => 
+          dispatch({ type: "RESET_RECEIPT_DETAILS" }),
       }}
     >
       {children}

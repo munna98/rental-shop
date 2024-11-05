@@ -3,16 +3,16 @@ import { Box, Typography, useTheme } from '@mui/material';
 import ItemIcon from '@mui/icons-material/Category';
 import PeopleIcon from '@mui/icons-material/People';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import EventNoteIcon from '@mui/icons-material/EventNote';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ReportIcon from '@mui/icons-material/Assessment';
 import { useRouter } from 'next/router';
 
 const icons = [
   { component: <ItemIcon />, label: 'Items', route: '/items' }, // Add route here
-  { component: <PeopleIcon />, label: 'Customer', route: '/customers' },
+  { component: <PeopleIcon />, label: 'Customers', route: '/customers' },
   { component: <ShoppingCartIcon />, label: 'Rentals', route: '/rentals' },
-  { component: <EventNoteIcon />, label: 'Reserve', route: '/reserve' },
+  { component: <CalculateIcon />, label: 'Accounts', route: '/accounts' },
   { component: <BarChartIcon />, label: 'Statistics', route: '/statistics' },
   { component: <ReportIcon />, label: 'Report', route: '/report' },
 ];

@@ -8,7 +8,6 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
-  Snackbar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
@@ -17,10 +16,29 @@ import StyledButton from "@/components/buttons/StyledButton";
 import MasterItems from "@/components/items/MasterItems";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import SubItems from "@/components/items/SubItems";
-import { useItems } from "@/context/ItemsContext"; // Import the context hook
+import { useItems } from "@/context/ItemsContext";
+import { useSnackbar } from "@/hooks/useSnackbar"; // New custom hook
+import axios from "axios";
+
+// Custom hook for search functionality
+const useSearch = (masterItems, subItems) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredItems = {
+    master: masterItems.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.code.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    sub: subItems.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.code.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  };
+
+  return { searchQuery, setSearchQuery, filteredItems };
+};
 
 const ItemsPage = () => {
-  // Get values from context
   const { 
     itemType, 
     setItemType, 
@@ -30,76 +48,42 @@ const ItemsPage = () => {
     fetchSubItems 
   } = useItems();
 
-  // Local state
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+  const { searchQuery, setSearchQuery, filteredItems } = useSearch(masterItems, subItems);
+  
   const [open, setOpen] = useState(false);
   const [openSubItem, setOpenSubItem] = useState(false);
   const [selectedMaster, setSelectedMaster] = useState("");
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState(""); // Added for search functionality
 
-  const handleItemTypeChange = (event) => {
-    setItemType(event.target.value);
-  };
-
-  const handleAddMasterItemOpen = () => {
-    setOpen(true);
-  };
-
-  const handleAddMasterItemClose = () => {
-    setOpen(false);
-  };
-
-  const handleAddSubItemClose = () => {
-    setOpenSubItem(false);
-  };
+  const handleItemTypeChange = (event) => setItemType(event.target.value);
+  const handleAddMasterItemOpen = () => setOpen(true);
+  const handleAddMasterItemClose = () => setOpen(false);
+  const handleAddSubItemClose = () => setOpenSubItem(false);
+  const handleSearchChange = (event) => setSearchQuery(event.target.value);
 
   const handleAddMasterItem = async (newItem) => {
     try {
       await axios.post('/api/master-items', newItem);
-      fetchMasterItems(); // Refresh master items
-      setSnackbarMessage("Master item added successfully!");
-      setSnackbarOpen(true);
+      await fetchMasterItems();
+      showSnackbar("Master item added successfully!", "success");
       handleAddMasterItemClose();
     } catch (error) {
       console.error("Error adding master item:", error);
-      setSnackbarMessage("Failed to add master item");
-      setSnackbarOpen(true);
+      showSnackbar("Failed to add master item.", "error");
     }
   };
 
   const handleAddSubItem = async (newSubItem) => {
     try {
       await axios.post('/api/sub-items', newSubItem);
-      fetchSubItems(); // Refresh sub items
-      setSnackbarMessage("Sub item added successfully!");
-      setSnackbarOpen(true);
+      await fetchSubItems();
+      showSnackbar("Sub item added successfully!", "success");
       handleAddSubItemClose();
     } catch (error) {
       console.error("Error adding sub item:", error);
-      setSnackbarMessage("Failed to add sub item");
-      setSnackbarOpen(true);
+      showSnackbar("Failed to add sub item.", "error");
     }
   };
-
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  // Filter items based on search query
-  const filteredMasterItems = masterItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredSubItems = subItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
@@ -128,7 +112,7 @@ const ItemsPage = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon className="h-5 w-5" />
                 </InputAdornment>
               ),
             }}
@@ -136,18 +120,19 @@ const ItemsPage = () => {
           />
 
           <StyledButton variant="icon" onClick={handleAddMasterItemOpen}>
-            <AddIcon />
+            <AddIcon className="h-5 w-5" />
           </StyledButton>
         </Box>
       </Box>
 
       {itemType === "Master Items" ? (
         <MasterItems 
+          items={filteredItems.master}
           selectedMaster={selectedMaster}
           setSelectedMaster={setSelectedMaster}
         />
       ) : (
-        <SubItems />
+        <SubItems items={filteredItems.sub} />
       )}
 
       <AddMasterItemForm 
@@ -164,12 +149,7 @@ const ItemsPage = () => {
         onAdd={handleAddSubItem}
       />
 
-      <Snackbar
-        open={snackbarOpen}
-        onClose={handleSnackbarClose}
-        message={snackbarMessage}
-        autoHideDuration={3000}
-      />
+      <SnackbarComponent />
     </Box>
   );
 };

@@ -8,60 +8,62 @@ import {
   TableRow,
   Paper,
   Avatar,
-  Button,
-  Snackbar,
-  Alert,
+  Button
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
-import axios from 'axios';
 import { useConfirmation } from "@/hooks/useConfirmation";
-import EditMasterItemForm from "@/components/forms/EditMasterItemForm";
-import { useItems } from "@/context/ItemsContext"; // Import the context hook
+import { useItems } from "@/context/ItemsContext";
+import { useSnackbar } from "@/hooks/useSnackbar";
+import axios from 'axios';
+import EditMasterItemForm from "../forms/EditMasterItemForm";
 
 const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  
-  // Get context values
   const { masterItems, fetchMasterItems, fetchSubItems } = useItems();
-  
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
   const { showConfirmation, ConfirmationDialog } = useConfirmation();
-
-  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   const handleDelete = async (id, itemName) => {
     const isConfirmed = await showConfirmation({
       title: "Delete Confirmation",
       message: `Are you sure you want to delete "${itemName}"?`,
     });
-
+  
     if (isConfirmed) {
       try {
         await axios.delete(`/api/master-items/${id}`);
-        // Fetch updated items after deletion
-        fetchMasterItems();
-        fetchSubItems(); // Also fetch sub-items as they might be affected
-
-        setSnackbar({
-          open: true,
-          message: "Master item deleted successfully!",
-          severity: "success",
-        });
+        await fetchMasterItems();
+        await fetchSubItems();
+        showSnackbar("Master item deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting master item:", error);
-        setSnackbar({
-          open: true,
-          message: "Failed to delete master item.",
-          severity: "error",
-        });
+  
+        // Check if the error response exists and has a status
+        if (error.response) {
+          // Handle different error status codes
+          if (error.response.status === 400) {
+            showSnackbar("Cannot delete item: it is referenced by subitems.", "error");
+          } else if (error.response.status === 404) {
+            showSnackbar("Master item not found.", "error");
+          } else {
+            showSnackbar("Failed to delete master item. Please try again.", "error");
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          showSnackbar("No response from server. Please check your network connection.", "error");
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          showSnackbar("An error occurred while deleting the master item.", "error");
+        }
       }
     }
   };
+  
 
   const handleEditOpen = (item) => {
     setCurrentItem(item);
@@ -70,20 +72,11 @@ const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
 
   const handleUpdate = async (updatedItem) => {
     try {
-      await axios.put(`/api/master-items/${updatedItem._id}`, updatedItem);
-      fetchMasterItems(); // Fetch updated items
-      setSnackbar({
-        open: true,
-        message: "Item updated successfully!",
-        severity: "success",
-      });
+      await fetchMasterItems();
+      showSnackbar("Item updated successfully!", "success");
     } catch (error) {
       console.error("Error updating master item:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update master item.",
-        severity: "error",
-      });
+      showSnackbar("Failed to update master item.", "error");
     }
   };
 
@@ -154,26 +147,20 @@ const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
         handleClose={handleAddSubItemClose} 
         masterItems={masterItems} 
         selectedMaster={selectedMaster}
-        onAdd={fetchSubItems} // Pass the fetchSubItems function to refresh after adding
+        onAdd={async () => {
+          await fetchSubItems();
+          showSnackbar("Sub item added successfully!", "success");
+        }} // Show snackbar here
       />
-      <EditMasterItemForm 
-        open={openEdit} 
-        handleClose={handleEditClose} 
-        item={currentItem} 
+
+      <EditMasterItemForm
+        open={openEdit}
+        handleClose={handleEditClose}
+        item={currentItem}
         onUpdate={handleUpdate}
       />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-
+      <SnackbarComponent />
       <ConfirmationDialog />
     </>
   );

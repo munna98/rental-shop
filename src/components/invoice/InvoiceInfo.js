@@ -75,9 +75,9 @@ const InvoiceInfo = () => {
                 <Typography variant="body1">
                   {option.name}
                 </Typography>
-                {option.email && (
+                {option.code && (
                   <Typography variant="caption" color="text.secondary">
-                    {option.email}
+                    {option.code}
                   </Typography>
                 )}
               </Box>
@@ -89,7 +89,7 @@ const InvoiceInfo = () => {
             return options.filter(
               option => 
                 option.name.toLowerCase().includes(filterValue) ||
-                (option.email && option.email.toLowerCase().includes(filterValue))
+                (option.code && option.code.toLowerCase().includes(filterValue))
             );
           }}
         />

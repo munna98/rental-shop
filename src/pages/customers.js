@@ -4,8 +4,6 @@ import {
   Typography,
   TextField,
   InputAdornment,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
@@ -14,7 +12,8 @@ import AddCustomerForm from "@/components/forms/AddCustomerForm";
 import EditCustomerForm from "@/components/forms/EditCustomerForm";
 import StyledButton from "@/components/buttons/StyledButton";
 import CustomerList from "@/components/customers/CustomerList";
-
+import { useConfirmation } from "@/hooks/useConfirmation"; // Import the useConfirmation hook
+import { useSnackbar } from "@/hooks/useSnackbar"; // Import the useSnackbar hook
 
 const CustomerPage = () => {
   const [open, setOpen] = useState(false);
@@ -22,11 +21,8 @@ const CustomerPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const { showSnackbar, SnackbarComponent } = useSnackbar(); // Use the snackbar hook
+  const { showConfirmation, ConfirmationDialog } = useConfirmation(); // Use the confirmation hook
 
   // Fetch customers on component mount
   useEffect(() => {
@@ -49,33 +45,24 @@ const CustomerPage = () => {
     try {
       const response = await axios.post("/api/customers", {
         name: newCustomer.name,
-        code: newCustomer.code, // Add any other fields required by your schema
+        code: newCustomer.code,
         address: newCustomer.address,
         mobile: newCustomer.mobile,
         whatsapp: newCustomer.whatsapp,
       });
       setCustomers((prev) => [...prev, response.data]);
-      setSnackbar({
-        open: true,
-        message: "Customer added successfully!",
-        severity: "success",
-      });
+      showSnackbar("Customer added successfully!", "success"); // Use the snackbar hook
       handleAddCustomerClose(); // Close modal on success
     } catch (error) {
       console.error("Error adding customer:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to add customer.",
-        severity: "error",
-      });
+      showSnackbar("Failed to add customer.", "error"); // Use the snackbar hook
     }
   };
 
   const handleEditCustomer = async (updatedCustomer) => {
     try {
-      // Use _id instead of id
       const response = await axios.put(
-        `/api/customers/${updatedCustomer._id}`, // Change from .id to ._id
+        `/api/customers/${updatedCustomer._id}`,
         updatedCustomer
       );
       setCustomers((prev) =>
@@ -83,19 +70,11 @@ const CustomerPage = () => {
           customer._id === updatedCustomer._id ? response.data : customer
         )
       );
-      setSnackbar({
-        open: true,
-        message: "Customer updated successfully!",
-        severity: "success",
-      });
+      showSnackbar("Customer updated successfully!", "success"); // Use the snackbar hook
       handleEditCustomerClose();
     } catch (error) {
       console.error("Error updating customer:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to update customer.",
-        severity: "error",
-      });
+      showSnackbar("Failed to update customer.", "error"); // Use the snackbar hook
     }
   };
 
@@ -106,29 +85,26 @@ const CustomerPage = () => {
   const handleEditCustomerClose = () => setOpenEdit(false);
 
   const handleDeleteCustomer = async (customerId) => {
-    try {
-      await axios.delete(`/api/customers/${customerId}`);
-      setCustomers((prev) =>
-        prev.filter((customer) => customer._id !== customerId)
-      ); // Adjusted for MongoDB `_id`
-      setSnackbar({
-        open: true,
-        message: "Customer deleted successfully!",
-        severity: "success",
-      });
-    } catch (error) {
-      console.error("Error deleting customer:", error);
-      setSnackbar({
-        open: true,
-        message: "Failed to delete customer.",
-        severity: "error",
-      });
+    const isConfirmed = await showConfirmation({
+      title: "Delete Confirmation",
+      message: "Are you sure you want to delete this customer?",
+    });
+
+    if (isConfirmed) {
+      try {
+        await axios.delete(`/api/customers/${customerId}`);
+        setCustomers((prev) =>
+          prev.filter((customer) => customer._id !== customerId)
+        );
+        showSnackbar("Customer deleted successfully!", "success"); // Use the snackbar hook
+      } catch (error) {
+        console.error("Error deleting customer:", error);
+        showSnackbar("Failed to delete customer.", "error"); // Use the snackbar hook
+      }
     }
   };
 
   const handleSearchChange = (event) => setSearchQuery(event.target.value);
-
-  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   // Filter customers based on search query
   const filteredCustomers = customers.filter((customer) =>
@@ -181,6 +157,7 @@ const CustomerPage = () => {
         open={open}
         handleClose={handleAddCustomerClose}
         onAddCustomer={handleAddCustomer}
+        existingCustomers={customers} 
       />
       <EditCustomerForm
         open={openEdit}
@@ -190,15 +167,10 @@ const CustomerPage = () => {
       />
 
       {/* Snackbar for success/error messages */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <SnackbarComponent /> {/* Use the snackbar component */}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog />
     </Box>
   );
 };

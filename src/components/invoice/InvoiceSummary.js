@@ -13,6 +13,7 @@ const InvoiceSummary = () => {
     selectedItems,
     deliveryDate,
     weddingDate,
+    refreshInvoiceNumber,
   } = useInvoice();
 
   const customerDetails = selectedCustomer;
@@ -45,6 +46,7 @@ const InvoiceSummary = () => {
       };
 
       await saveInvoice(invoiceData);
+      await refreshInvoiceNumber();
       alert('Invoice saved successfully!');
     } catch (error) {
       console.error('Error saving invoice:', error);

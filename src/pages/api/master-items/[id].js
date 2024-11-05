@@ -1,6 +1,7 @@
 // src/pages/api/master-items/[id].js
 import connectDB from '../../../config/db';
 import MasterItem from '../../../models/MasterItem';
+import SubItem from '../../../models/SubItem'; // Import the model referencing MasterItem
 
 export default async function handler(req, res) {
   await connectDB();
@@ -8,14 +9,14 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   switch (method) {
-    case 'PUT': // Add a case for handling PUT requests
+    case 'PUT':
       try {
         const { name, code } = req.body;
 
         const updatedItem = await MasterItem.findByIdAndUpdate(
           id,
           { name, code },
-          { new: true, runValidators: true } // Returns the updated document after update
+          { new: true, runValidators: true }
         );
 
         if (!updatedItem) {
@@ -30,6 +31,13 @@ export default async function handler(req, res) {
 
     case 'DELETE':
       try {
+        // Check if the master item is referenced by any subitems
+        const referencedSubItems = await SubItem.countDocuments({ master: id });
+
+        if (referencedSubItems > 0) {
+          return res.status(400).json({ error: 'Item cannot be deleted as it is referenced by subitems' });
+        }
+
         const deletedItem = await MasterItem.findByIdAndDelete(id);
 
         if (!deletedItem) {
@@ -43,7 +51,7 @@ export default async function handler(req, res) {
       break;
 
     default:
-      res.setHeader('Allow', ['PUT', 'DELETE']); // Allow both PUT and DELETE methods
+      res.setHeader('Allow', ['PUT', 'DELETE']);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 }
