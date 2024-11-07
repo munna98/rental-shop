@@ -5,6 +5,7 @@ import { lightTheme, darkTheme } from "../styles/theme"; // Import custom themes
 import DashboardLayout from "../layouts/DashboardLayout"; // Import layout
 import { ItemsProvider } from "@/context/ItemsContext";
 import { InvoiceProvider } from "@/context/InvoiceContext"; // Import InvoiceProvider
+import { LedgerProvider } from "@/context/LedgerContext";
 
 function MyApp({ Component, pageProps }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -31,10 +32,12 @@ function MyApp({ Component, pageProps }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ItemsProvider>
-        <InvoiceProvider> {/* Wrap InvoiceProvider here */}
-          <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode}>
-            <Component {...pageProps} />
-          </DashboardLayout>
+        <InvoiceProvider>
+          <LedgerProvider>
+            <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode}>
+              <Component {...pageProps} />
+            </DashboardLayout>
+          </LedgerProvider>
         </InvoiceProvider>
       </ItemsProvider>
     </ThemeProvider>

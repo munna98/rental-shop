@@ -12,7 +12,7 @@ const icons = [
   { component: <ItemIcon />, label: 'Items', route: '/items' }, // Add route here
   { component: <PeopleIcon />, label: 'Customers', route: '/customers' },
   { component: <ShoppingCartIcon />, label: 'Rentals', route: '/rentals' },
-  { component: <CalculateIcon />, label: 'Accounts', route: '/accounts' },
+  { component: <CalculateIcon />, label: 'Accounting', route: '/accounting' },
   { component: <BarChartIcon />, label: 'Statistics', route: '/statistics' },
   { component: <ReportIcon />, label: 'Report', route: '/report' },
 ];

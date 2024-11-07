@@ -127,7 +127,7 @@ export const deleteInvoice = async (id) => {
     throw error;
   }
 };
-
+// src/services/api.js
 export const createReceipts = async (receiptData) => {
   try {
     const response = await fetch('/api/receipts', {

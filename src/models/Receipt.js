@@ -8,6 +8,10 @@ const ReceiptSchema = new mongoose.Schema({
   },
   invoiceNumber: {
     type: String,
+    // This is optional, and it will only be required if the receipt is from the InvoicingPage.
+    required: function () {
+      return this.sourcePage === 'invoicing';  // Only required if the source is 'invoicing'
+    },
   },
   receiptNumber: {
     type: String,
@@ -33,6 +37,11 @@ const ReceiptSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  sourcePage: {
+    type: String,
+    enum: ['receipt', 'invoicing'],
+    required: true,  // Tracks whether the receipt is from the ReceiptPage or InvoicingPage
   }
 });
 
