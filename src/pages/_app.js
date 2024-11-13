@@ -6,6 +6,8 @@ import DashboardLayout from "../layouts/DashboardLayout"; // Import layout
 import { ItemsProvider } from "@/context/ItemsContext";
 import { InvoiceProvider } from "@/context/InvoiceContext"; // Import InvoiceProvider
 import { LedgerProvider } from "@/context/LedgerContext";
+import { AccountsProvider } from "@/context/AccountsContext";
+import { ReceiptProvider } from "@/context/ReceiptContext";
 
 function MyApp({ Component, pageProps }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -34,9 +36,16 @@ function MyApp({ Component, pageProps }) {
       <ItemsProvider>
         <InvoiceProvider>
           <LedgerProvider>
-            <DashboardLayout toggleTheme={toggleTheme} isDarkMode={isDarkMode}>
-              <Component {...pageProps} />
-            </DashboardLayout>
+            <ReceiptProvider>
+              <AccountsProvider>
+                <DashboardLayout
+                  toggleTheme={toggleTheme}
+                  isDarkMode={isDarkMode}
+                >
+                  <Component {...pageProps} />
+                </DashboardLayout>
+              </AccountsProvider>
+            </ReceiptProvider>
           </LedgerProvider>
         </InvoiceProvider>
       </ItemsProvider>

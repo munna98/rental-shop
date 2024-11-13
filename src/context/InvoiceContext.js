@@ -1,8 +1,33 @@
-// src/context/InvoiceContext.js
 import React, { createContext, useReducer, useContext, useEffect } from "react";
-import { fetchCustomers, fetchItems, fetchLastInvoiceNumber } from "@/services/api";
+import {
+  fetchCustomers,
+  fetchItems,
+  fetchLastInvoiceNumber,
+  fetchInvoiceByNumber,
+  createReceipts,
+  saveInvoice,
+} from "@/services/api";
 
 const InvoiceContext = createContext();
+
+export const ACTIONS = {
+  SET_INVOICE_NUMBER: "SET_INVOICE_NUMBER",
+  SET_CUSTOMER: "SET_CUSTOMER",
+  SET_DELIVERY_DATE: "SET_DELIVERY_DATE",
+  SET_WEDDING_DATE: "SET_WEDDING_DATE",
+  ADD_ITEM: "ADD_ITEM",
+  REMOVE_ITEM: "REMOVE_ITEM",
+  SET_CUSTOMERS: "SET_CUSTOMERS",
+  SET_ITEMS: "SET_ITEMS",
+  SET_LOADING: "SET_LOADING",
+  SET_ERROR: "SET_ERROR",
+  SET_RECEIPTS: "SET_RECEIPTS",
+  ADD_RECEIPT: "ADD_RECEIPT",
+  RESET_RECEIPTS: "RESET_RECEIPTS",
+  UPDATE_INVOICE_STATUS: "UPDATE_INVOICE_STATUS",
+  RESET_INVOICE: "RESET_INVOICE",
+  LOAD_INVOICE_DATA: "LOAD_INVOICE_DATA",
+};
 
 const initialState = {
   invoiceNumber: "INV001",
@@ -13,62 +38,34 @@ const initialState = {
   totalAmount: 0,
   customers: [],
   items: [],
-  receiptDetails: {
-    advanceAmount: 0,
-    receiptMethod: "cash",
-    notes: "",
-  },
+  receipts: [],
   loading: true,
   error: null,
+  invoiceStatus: null,
 };
 
-const invoiceReducer = (state, action) => {
+function invoiceReducer(state, action) {
   switch (action.type) {
-    case "SET_INVOICE_NUMBER":
-      return {
-        ...state,
-        invoiceNumber: action.payload,
-      };
-    
-    case "NEXT_INVOICE":
-      const currentNumber = parseInt(state.invoiceNumber.replace("INV", ""));
-      return {
-        ...state,
-        invoiceNumber: `INV${(currentNumber + 1).toString().padStart(3, '0')}`,
-      };
-    
-    case "PREVIOUS_INVOICE":
-      const prevNumber = parseInt(state.invoiceNumber.replace("INV", ""));
-      if (prevNumber > 1) {
-        return {
-          ...state,
-          invoiceNumber: `INV${(prevNumber - 1).toString().padStart(3, '0')}`,
-        };
-      }
-      return state;
-    case "SET_CUSTOMER":
+    case ACTIONS.SET_INVOICE_NUMBER:
+      return { ...state, invoiceNumber: action.payload };
+    case ACTIONS.SET_CUSTOMER:
       return {
         ...state,
         selectedCustomer:
-          state.customers.find((customer) => customer._id === action.payload) ||
-          null,
+          state.customers.find((c) => c._id === action.payload) || null,
       };
-    case "SET_DELIVERY_DATE":
+    case ACTIONS.SET_DELIVERY_DATE:
       return { ...state, deliveryDate: action.payload };
-    case "SET_WEDDING_DATE":
+    case ACTIONS.SET_WEDDING_DATE:
       return { ...state, weddingDate: action.payload };
-    case "ADD_ITEM":
-      // Ensure unique identifier for the item
-      const newItem = {
-        ...action.payload,
-        uniqueId: Date.now().toString(), // Add a unique identifier
-      };
+    case ACTIONS.ADD_ITEM:
+      const newItem = { ...action.payload, uniqueId: Date.now().toString() };
       return {
         ...state,
         selectedItems: [...state.selectedItems, newItem],
         totalAmount: state.totalAmount + newItem.rentRate,
       };
-    case "REMOVE_ITEM":
+    case ACTIONS.REMOVE_ITEM:
       const removedItem = state.selectedItems.find(
         (item) => item.uniqueId === action.payload
       );
@@ -80,131 +77,208 @@ const invoiceReducer = (state, action) => {
         totalAmount:
           state.totalAmount - (removedItem ? removedItem.rentRate : 0),
       };
-    case "SET_CUSTOMERS":
+    case ACTIONS.SET_CUSTOMERS:
       return { ...state, customers: action.payload };
-    case "SET_ITEMS":
+    case ACTIONS.SET_ITEMS:
       return { ...state, items: action.payload };
-    case "SET_LOADING":
+    case ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
-    case "SET_ERROR":
+    case ACTIONS.SET_ERROR:
       return { ...state, error: action.payload };
-    case "NEXT_INVOICE":
+    case ACTIONS.SET_RECEIPTS:
+      return { ...state, receipts: action.payload };
+    case ACTIONS.ADD_RECEIPT:
+      return { ...state, receipts: [...state.receipts, action.payload] };
+    case ACTIONS.RESET_RECEIPTS:
+      return { ...state, receipts: [] };
+    case ACTIONS.UPDATE_INVOICE_STATUS:
+      return { ...state, invoiceStatus: action.payload };
+    case ACTIONS.RESET_INVOICE:
       return {
         ...state,
-        invoiceNumber: `INV${
-          parseInt(state.invoiceNumber.replace("INV", "")) + 1
-        }`,
+        selectedItems: [],
+        selectedCustomer: null,
+        deliveryDate: "",
+        weddingDate: "",
+        totalAmount: 0,
+        receipts: [],
+        invoiceStatus: null,
+        error: null,
       };
-    case "PREVIOUS_INVOICE":
+    case ACTIONS.LOAD_INVOICE_DATA:
+      const invoiceData = action.payload;
       return {
         ...state,
-        invoiceNumber: `INV${
-          parseInt(state.invoiceNumber.replace("INV", "")) - 1
-        }`,
-      };
-    case "UPDATE_RECEIPT_DETAILS":
-      return {
-        ...state,
-        receiptDetails: {
-          ...state.receiptDetails,
-          ...action.payload,
-        },
-      };
-    case "RESET_RECEIPT_DETAILS":
-      return {
-        ...state,
-        receiptDetails: initialState.receiptDetails,
+        invoiceNumber: invoiceData.invoiceNumber,
+        selectedCustomer: invoiceData.customer,
+        selectedItems: invoiceData.items,
+        deliveryDate: invoiceData.deliveryDate,
+        weddingDate: invoiceData.weddingDate,
+        totalAmount: invoiceData.totalAmount,
+        receipts: invoiceData.receipts || [],
+        invoiceStatus: invoiceData.status,
       };
     default:
       return state;
   }
-};
+}
 
 export const InvoiceProvider = ({ children }) => {
   const [state, dispatch] = useReducer(invoiceReducer, initialState);
+
+  const loadInvoice = async (invoiceNumber) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true });
+    try {
+      const invoiceData = await fetchInvoiceByNumber(invoiceNumber);
+      dispatch({ type: ACTIONS.LOAD_INVOICE_DATA, payload: invoiceData });
+    } catch (error) {
+      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
+      console.error("Failed to load invoice:", error);
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
+    }
+  };
+
+  const handlePrevious = async () => {
+    const currentNumber = parseInt(state.invoiceNumber.replace("INV", ""));
+    if (currentNumber > 1) {
+      const prevInvoiceNumber = `INV${(currentNumber - 1).toString().padStart(3, '0')}`;
+      await loadInvoice(prevInvoiceNumber);
+    }
+  };
+
+  const handleNext = async () => {
+    const currentNumber = parseInt(state.invoiceNumber.replace("INV", ""));
+    const nextInvoiceNumber = `INV${(currentNumber + 1).toString().padStart(3, '0')}`;
+    await loadInvoice(nextInvoiceNumber);
+  };
 
   const refreshInvoiceNumber = async () => {
     try {
       const lastInvoiceNumber = await fetchLastInvoiceNumber();
       const lastNumber = parseInt(lastInvoiceNumber.replace("INV", ""));
-      const nextInvoiceNumber = `INV${(lastNumber + 1).toString().padStart(3, '0')}`;
-      dispatch({ type: "SET_INVOICE_NUMBER", payload: nextInvoiceNumber });
+      const nextInvoiceNumber = `INV${(lastNumber + 1)
+        .toString()
+        .padStart(3, "0")}`;
+      dispatch({
+        type: ACTIONS.SET_INVOICE_NUMBER,
+        payload: nextInvoiceNumber,
+      });
     } catch (error) {
       console.error("Failed to refresh invoice number", error);
     }
   };
 
-  const fetchReceiptsForInvoice = async (invoiceId) => {
+  const resetInvoice = () => {
+    dispatch({ type: ACTIONS.RESET_INVOICE });
+    refreshInvoiceNumber();
+  };
+
+  const saveInvoiceWithReceipts = async (invoiceData, receipts) => {
     try {
-      const response = await fetch(`/api/receipts?invoiceId=${invoiceId}`);
-      if (!response.ok) throw new Error('Failed to fetch receipts');
-      return await response.json();
+      const receiptData = {
+        receipts: receipts.map((receipt) => ({
+          ...receipt,
+          customerId: invoiceData.customer._id,
+          invoiceNumber: invoiceData.invoiceNumber,
+          transactionType: "receipt",
+          sourcePage: "invoicing",
+        })),
+        customerId: invoiceData.customer._id,
+        invoiceNumber: invoiceData.invoiceNumber,
+        transactionType: "receipt",
+        sourcePage: "invoicing",
+      };
+
+      const transactionResult = await createReceipts(receiptData);
+
+      const updatedReceipts = transactionResult.transactions.map(
+        (transaction) => ({
+          id: transaction._id,
+          amount: transaction.amount,
+          date: transaction.date,
+          method: transaction.method,
+          serialNumber: transaction.serialNumber,
+          note: transaction.note,
+        })
+      );
+
+      const completeInvoiceData = {
+        ...invoiceData,
+        receipts: updatedReceipts,
+        paidAmount: receipts.reduce(
+          (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+          0
+        ),
+        paymentStatus:
+          receipts.reduce(
+            (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+            0
+          ) >= invoiceData.totalAmount
+            ? "completed"
+            : "pending",
+      };
+
+      const savedInvoice = await saveInvoice(completeInvoiceData);
+
+      // Reset the invoice after successful save
+      resetInvoice();
+
+      return {
+        success: true,
+        invoice: savedInvoice,
+        transactions: transactionResult.transactions,
+      };
     } catch (error) {
-      console.error('Error fetching receipts:', error);
-      throw error;
+      console.error("Failed to save invoice and receipts", error);
+      throw new Error(error.message || "Failed to save invoice and receipts");
+    }
+  };
+
+  const fetchData = async () => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true });
+    try {
+      const [fetchedCustomers, fetchedItems, lastInvoiceNumber] =
+        await Promise.all([
+          fetchCustomers(),
+          fetchItems(),
+          fetchLastInvoiceNumber(),
+        ]);
+
+      dispatch({ type: ACTIONS.SET_CUSTOMERS, payload: fetchedCustomers });
+      dispatch({ type: ACTIONS.SET_ITEMS, payload: fetchedItems });
+
+      const lastNumber = parseInt(lastInvoiceNumber.replace("INV", ""));
+      const nextInvoiceNumber = `INV${(lastNumber + 1)
+        .toString()
+        .padStart(3, "0")}`;
+      dispatch({
+        type: ACTIONS.SET_INVOICE_NUMBER,
+        payload: nextInvoiceNumber,
+      });
+    } catch (error) {
+      console.error("Failed to fetch data", error);
+      dispatch({ type: ACTIONS.SET_ERROR, payload: "Failed to fetch data" });
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
     }
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      dispatch({ type: "SET_LOADING", payload: true });
-      try {
-        const [fetchedCustomers, fetchedItems, lastInvoiceNumber] = await Promise.all([
-          fetchCustomers(),
-          fetchItems(),
-          fetchLastInvoiceNumber()
-        ]);
-
-        dispatch({ type: "SET_CUSTOMERS", payload: fetchedCustomers });
-        dispatch({ type: "SET_ITEMS", payload: fetchedItems });
-        
-        // Set the next invoice number based on the last invoice
-        const lastNumber = parseInt(lastInvoiceNumber.replace("INV", ""));
-        const nextInvoiceNumber = `INV${(lastNumber + 1).toString().padStart(3, '0')}`;
-        dispatch({ type: "SET_INVOICE_NUMBER", payload: nextInvoiceNumber });
-
-      } catch (error) {
-        console.error("Failed to fetch data", error);
-        dispatch({ type: "SET_ERROR", payload: "Failed to fetch data" });
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
-    };
-
     fetchData();
   }, []);
-
-  const handlePrevious = () => {
-    dispatch({ type: "PREVIOUS_INVOICE" });
-  };
-
-  const handleNext = () => {
-    dispatch({ type: "NEXT_INVOICE" });
-  };
-
-  const handleAddItem = (item) => {
-    dispatch({ type: "ADD_ITEM", payload: item });
-  };
-
-  const handleRemoveItem = (uniqueId) => {
-    dispatch({ type: "REMOVE_ITEM", payload: uniqueId });
-  };
 
   return (
     <InvoiceContext.Provider
       value={{
         ...state,
-        handlePrevious,
-        handleNext,
-        handleAddItem,
-        handleRemoveItem,
         dispatch,
         refreshInvoiceNumber,
-        fetchReceiptsForInvoice,
-        updateReceiptDetails: (details) => 
-          dispatch({ type: "UPDATE_RECEIPT_DETAILS", payload: details }),
-        resetReceiptDetails: () => 
-          dispatch({ type: "RESET_RECEIPT_DETAILS" }),
+        saveInvoiceWithReceipts,
+        resetInvoice,
+        handlePrevious,
+        handleNext,
+        loadInvoice,
       }}
     >
       {children}

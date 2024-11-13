@@ -73,7 +73,7 @@ const invoiceSchema = new mongoose.Schema({
   },
   receipts: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Receipt'
+    ref: 'Transaction'
   }],
   
   // Add fields to track payment
@@ -89,7 +89,7 @@ const invoiceSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'completed'],
+    enum: ['pending', 'partial', 'completed'],
     default: 'pending'
   },
   createdAt: { 
@@ -104,7 +104,14 @@ const invoiceSchema = new mongoose.Schema({
 
 // Update the updatedAt field before saving
 invoiceSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
+  // Update paymentStatus based on paidAmount and totalAmount
+  if (this.paidAmount >= this.totalAmount) {
+    this.paymentStatus = 'completed';
+  } else if (this.paidAmount > 0) {
+    this.paymentStatus = 'partial';
+  } else {
+    this.paymentStatus = 'pending';
+  }
   next();
 });
 

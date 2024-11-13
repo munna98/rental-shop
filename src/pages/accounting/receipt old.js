@@ -19,39 +19,37 @@ import {
   Autocomplete
 } from "@mui/material";
 import { useSnackbar } from "@/hooks/useSnackbar";
-import { useReceipt } from "@/context/ReceiptContext";
+import { createReceipts } from "@/services/api";
+import { fetchCustomers } from "@/services/api";
 
 const ReceiptPage = () => {
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const { customers, receipts, loading, error, addReceipt, submitReceipts } = useReceipt();
-
-  // Local form state
   const [amount, setAmount] = useState("");
   const [receiptMethod, setReceiptMethod] = useState("cash");
   const [note, setNote] = useState("");
+  const [receipts, setReceipts] = useState([]);
   const [customer, setCustomer] = useState("");
+  const [customers, setCustomers] = useState([]);
   const [isValidAmount, setIsValidAmount] = useState(true);
-  const [customerError, setCustomerError] = useState(false);
   const [receiptDate, setReceiptDate] = useState(
     new Date().toISOString().split('T')[0]
-  );  
+  );
 
-  // Handle error notifications from context
   useEffect(() => {
-    if (error) {
-      showSnackbar(error, "error");
-    }
-  }, [error, showSnackbar]);
+    const fetchCustomerData = async () => {
+      try {
+        const customerData = await fetchCustomers();
+        setCustomers(customerData);
+      } catch (error) {
+        showSnackbar("Error fetching customers", "error");
+      }
+    };
 
-  const resetForm = () => {
-    setAmount("");
-    setReceiptMethod("cash");
-    setNote("");
-    setIsValidAmount(true);
-    setCustomerError(false);
-  };
+    fetchCustomerData();
+  }, [showSnackbar]);
 
   const CustomerSearchInput = ({
+    customers,
     value,
     onChange,
     error,
@@ -62,7 +60,6 @@ const ReceiptPage = () => {
         value={value ? customers.find((c) => c._id === value) || null : null}
         onChange={(event, newValue) => {
           onChange(newValue?._id || "");
-          setCustomerError(false);
         }}
         options={customers}
         getOptionLabel={(option) => option.name || ""}
@@ -71,8 +68,8 @@ const ReceiptPage = () => {
           <TextField
             {...params}
             label="Customer"
-            error={error || customerError}
-            helperText={helperText || (customerError && "Please select a customer first")}
+            error={error}
+            helperText={helperText}
             fullWidth
           />
         )}
@@ -101,26 +98,9 @@ const ReceiptPage = () => {
     );
   };
 
-  const validateForm = () => {
-    let isValid = true;
-
-    if (!customer) {
-      setCustomerError(true);
-      // showSnackbar("Please select a customer first", "error");
-      isValid = false;
-    }
-
+  const handleAddReceipt = () => {
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       setIsValidAmount(false);
-      // showSnackbar("Please enter a valid amount", "error");
-      isValid = false;
-    }
-
-    return isValid;
-  };
-
-  const handleAddReceipt = () => {
-    if (!validateForm()) {
       return;
     }
 
@@ -129,16 +109,13 @@ const ReceiptPage = () => {
       method: receiptMethod,
       date: receiptDate,
       note,
-      customerId: customer,
     };
 
-    const result = addReceipt(newReceipt);
-    
-    if (result.success) {
-      resetForm();
-    } else {
-      showSnackbar(result.error, "error");
-    }
+    setReceipts((prevReceipts) => [...prevReceipts, newReceipt]);
+    setAmount("");
+    setReceiptMethod("cash");
+    setNote("");
+    setIsValidAmount(true);
   };
 
   const handleSubmitReceipts = async () => {
@@ -152,23 +129,22 @@ const ReceiptPage = () => {
       return;
     }
 
-    const result = await submitReceipts(customer);
-    
-    if (result.success) {
+    const receiptData = {
+      receipts,
+      customerId: customer,
+      sourcePage: "receipt",
+      transactionType: "receipt",
+    };
+
+    try {
+      await createReceipts(receiptData);
       showSnackbar("Receipts submitted successfully", "success");
+      setReceipts([]);
       setCustomer("");
-    } else {
-      showSnackbar(result.error, "error");
+    } catch (error) {
+      showSnackbar("Failed to submit receipts", "error");
     }
   };
-
-  if (loading) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Loading...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -182,14 +158,15 @@ const ReceiptPage = () => {
 
             <FormControl fullWidth sx={{ mb: 2 }}>
               <CustomerSearchInput
+                customers={customers}
                 value={customer}
                 onChange={(newValue) => setCustomer(newValue)}
-                error={customerError || (!customer && receipts.length > 0)}
+                error={!customer && receipts.length > 0}
                 helperText={
-                  customerError
-                    ? "Please select a customer first"
-                    : (!customer && receipts.length > 0 && "Please select a customer") ||
-                      "Select the customer for the receipt"
+                  (!customer &&
+                    receipts.length > 0 &&
+                    "Please select a customer") ||
+                  "Select the customer for the receipt"
                 }
               />
             </FormControl>

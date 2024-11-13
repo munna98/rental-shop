@@ -1,5 +1,5 @@
 import connectDB from "../../../config/db";
-import Receipt from "@/models/Receipt";
+import Transaction from "@/models/Transaction";
 import Customer from "@/models/Customer";
 
 export default async function handler(req, res) {
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    const { receipts, customerId, sourcePage = 'receipt' } = req.body;
+    const { receipts, customerId, invoiceNumber, transactionType, sourcePage = 'receipt' } = req.body;
 
     // Validate customerId
     const customer = await Customer.findById(customerId);
@@ -18,56 +18,61 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    // Get the last receipt number
-    const lastReceipt = await Receipt.findOne()
-      .sort({ receiptNumber: -1 })
-      .select("receiptNumber");
+    const createdTransactions = [];
 
-    let nextReceiptNumber = 1;
-    if (lastReceipt) {
-      const lastNumber = parseInt(lastReceipt.receiptNumber.replace("RCP", ""));
-      nextReceiptNumber = lastNumber + 1;
-    }
-
-    const createdReceipts = [];
-
+    // Process each receipt/payment individually
     for (const receiptData of receipts) {
-      const formattedReceiptNumber = `RCP${nextReceiptNumber
-        .toString()
-        .padStart(3, "0")}`;
+      // Get the last serial number for this transaction type
+      const lastTransaction = await Transaction.findOne({ transactionType })
+        .sort({ serialNumber: -1 })
+        .select("serialNumber");
 
-      const newReceipt = await Receipt.create({
+      // Calculate next serial number
+      let nextNumber = 1;
+      if (lastTransaction) {
+        // Extract numeric part of the last serial number and increment it
+        nextNumber = parseInt(lastTransaction.serialNumber.slice(1)) + 1;
+      }
+
+      // Generate serial number with appropriate prefix
+      const prefix = transactionType === "receipt" ? "R" : "P";
+      const formattedSerialNumber = `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+
+      // Create the transaction with unique serial number
+      const newTransaction = await Transaction.create({
         customer: customerId,
-        receiptNumber: formattedReceiptNumber,
+        transactionType,
+        serialNumber: formattedSerialNumber,
         amount: receiptData.amount,
-        receiptMethod: receiptData.method,
-        receiptDate: new Date(receiptData.date),
+        method: receiptData.method,
+        date: new Date(receiptData.date),
         note: receiptData.note,
-        sourcePage, // Track the source of the receipt
+        sourcePage,
       });
 
-      createdReceipts.push(newReceipt);
-      nextReceiptNumber++;
+      createdTransactions.push(newTransaction);
     }
 
     return res.status(201).json({
-      receipts: createdReceipts,
-      message: "Receipts created successfully"
+      transactions: createdTransactions,
+      message: "Transactions created successfully",
     });
   } catch (error) {
-    console.error("Receipt creation error:", error);
+    console.error("Transaction creation error:", error);
     return res
       .status(500)
-      .json({ message: error.message || "Error creating receipts" });
+      .json({ message: error.message || "Error creating transactions" });
   }
 }
+
+
 
 //TRansaction, replica
 
 // // src/pages/api/receipts/index.js
 // // import dbConnect from '@/lib/dbConnect';
 // import connectDB from "../../../config/db";
-// import Receipt from "@/models/Receipt";
+// import Transaction from "@/models/Transaction";
 // import Invoice from "@/models/Invoice";
 // import { startSession } from "mongoose";
 
@@ -85,43 +90,43 @@ export default async function handler(req, res) {
 //     const { receipts, invoiceNumber, customerId } = req.body;
 
 //     // Get the last receipt number
-//     const lastReceipt = await Receipt.findOne()
-//       .sort({ receiptNumber: -1 })
-//       .select("receiptNumber");
+//     const lastTransaction = await Transaction.findOne()
+//       .sort({ serialNumber: -1 })
+//       .select("serialNumber");
 
-//     let nextReceiptNumber = 1;
-//     if (lastReceipt) {
-//       const lastNumber = parseInt(lastReceipt.receiptNumber.replace("RCP", ""));
-//       nextReceiptNumber = lastNumber + 1;
+//     let nextserialNumber = 1;
+//     if (lastTransaction) {
+//       const lastNumber = parseInt(lastTransaction.serialNumber.replace("RCP", ""));
+//       nextserialNumber = lastNumber + 1;
 //     }
 
 //     // Create all receipts with proper receipt numbers
-//     const createdReceipts = [];
+//     const createdTransactions = [];
 //     let totalPaidAmount = 0;
 
 //     for (const receiptData of receipts) {
-//       const formattedReceiptNumber = `RCP${nextReceiptNumber
+//       const formattedserialNumber = `RCP${nextserialNumber
 //         .toString()
 //         .padStart(3, "0")}`;
 
-//       const newReceipt = await Receipt.create(
+//       const newTransaction = await Transaction.create(
 //         [
 //           {
 //             customer: customerId,
 //             invoiceNumber: invoiceNumber,
-//             receiptNumber: formattedReceiptNumber,
+//             serialNumber: formattedserialNumber,
 //             amount: receiptData.amount,
-//             receiptMethod: receiptData.method,
-//             receiptDate: new Date(receiptData.date),
+//             method: receiptData.method,
+//             date: new Date(receiptData.date),
 //             note: receiptData.note,
 //           },
 //         ],
 //         { session }
 //       );
 
-//       createdReceipts.push(newReceipt[0]);
+//       createdTransactions.push(newTransaction[0]);
 //       totalPaidAmount += parseFloat(receiptData.amount);
-//       nextReceiptNumber++;
+//       nextserialNumber++;
 //     }
 //     // Find the invoice
 //     const invoice = await Invoice.findOne({ invoiceNumber })
@@ -136,7 +141,7 @@ export default async function handler(req, res) {
 //     // Push all new receipt IDs to the invoice's receipts array
 //     invoice.receipts = [
 //       ...(invoice.receipts || []),
-//       ...createdReceipts.map((r) => r._id),
+//       ...createdTransactions.map((r) => r._id),
 //     ];
 
 //     await invoice.save({ session });
@@ -144,7 +149,7 @@ export default async function handler(req, res) {
 
 //     // Return created receipts with invoice update status
 //     return res.status(201).json({
-//       receipts: createdReceipts,
+//       receipts: createdTransactions,
 //       invoice: {
 //         paidAmount: invoice.paidAmount,
 //         balanceAmount: invoice.balanceAmount,
@@ -153,7 +158,7 @@ export default async function handler(req, res) {
 //     });
 //   } catch (error) {
 //     await session.abortTransaction();
-//     console.error("Receipt creation error:", error);
+//     console.error("Transaction creation error:", error);
 //     return res
 //       .status(500)
 //       .json({ message: error.message || "Error creating receipts" });

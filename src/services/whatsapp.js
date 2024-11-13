@@ -4,6 +4,8 @@ export const generateWhatsAppLink = ({
   customer,
   items,
   totalAmount,
+  paidAmount,
+  balanceAmount,
   deliveryDate,
   weddingDate
 }) => {
@@ -11,22 +13,24 @@ export const generateWhatsAppLink = ({
   const formattedDeliveryDate = deliveryDate
     ? new Date(deliveryDate).toLocaleDateString('en-IN')
     : null;
-    
+
   const formattedWeddingDate = weddingDate
     ? new Date(weddingDate).toLocaleDateString('en-IN')
     : null;
 
-  // Format total amount
+  // Format amounts
   const formattedTotal = totalAmount.toLocaleString('en-IN');
+  const formattedPaid = paidAmount.toLocaleString('en-IN');
+  const formattedBalance = balanceAmount.toLocaleString('en-IN');
 
   // Helper function to format measurements
   const formatMeasurements = (measurementArray) => {
     if (!measurementArray || !measurementArray[0]) return '';
-    
+
     const measurements = measurementArray[0];
     const formattedMeasurements = [];
 
-    if (measurements.item) formattedMeasurements.push(`Size: ${measurements.item}`);
+    if (measurements.item) formattedMeasurements.push(`Item Type: ${measurements.item}`);
     if (measurements.sleeve) formattedMeasurements.push(`Sleeve: ${measurements.sleeve}`);
     if (measurements.waist) formattedMeasurements.push(`Waist: ${measurements.waist}`);
     if (measurements.length) formattedMeasurements.push(`Length: ${measurements.length}`);
@@ -46,7 +50,7 @@ export const generateWhatsAppLink = ({
     })
     .join('\n\n');
 
-  // Build the message with proper spacing and emojis
+  // Build the message with paid and balance amounts
   const message = `🏰 *WED CASTLE*
 ---------------------------
 
@@ -61,6 +65,8 @@ ${itemsList}
 
 ---------------------------
 💰 *Total Amount: ₹${formattedTotal}*
+✅ *Paid Amount: ₹${formattedPaid}*
+🔴 *Balance Amount: ₹${formattedBalance}*
 ---------------------------
 
 Thank you for choosing Wed Castle! 🙏

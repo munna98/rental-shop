@@ -3,9 +3,10 @@ import { Box, Grid, Tabs, Tab, Typography } from "@mui/material";
 import Payment from "./accounting/payment";
 import Receipt from "./accounting/receipt";
 import Ledgers from "./accounting/ledgers";
-import Transactions from "./accounting/transactions";
+import Transactions from "./accounting/overview";
 import Summary from "./accounting/summary";
 import Balances from "./accounting/balances";
+import Accounts from "./accounting/accounts";
 import { AccountsProvider } from "@/context/AccountsContext";
 
 const AccountingPage = () => {
@@ -25,7 +26,7 @@ const AccountingPage = () => {
         <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth">
           <Tab label="Payment" />
           <Tab label="Receipt" />
-          <Tab label="Ledgers" />
+          <Tab label="Accounts" />
           <Tab label="Transactions" />
           <Tab label="Summary" />
           <Tab label="Balances" />
@@ -35,7 +36,7 @@ const AccountingPage = () => {
           <Grid item xs={12}>
             {activeTab === 0 && <Payment />}
             {activeTab === 1 && <Receipt />}
-            {activeTab === 2 && <Ledgers />}
+            {activeTab === 2 && <Accounts />}
             {activeTab === 3 && <Transactions />}
             {activeTab === 4 && <Summary />}
             {activeTab === 5 && <Balances />}

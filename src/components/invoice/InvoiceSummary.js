@@ -1,8 +1,8 @@
+// src/components/invoice/ReceiptDetails
 import React from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { generateWhatsAppLink } from '@/services/whatsapp';
-import { saveInvoice } from '@/services/api';
-import { useInvoice } from '@/context/InvoiceContext';
+import { useInvoice, ACTIONS } from '@/context/InvoiceContext';
 
 const InvoiceSummary = () => {
   const theme = useTheme();
@@ -13,13 +13,20 @@ const InvoiceSummary = () => {
     selectedItems,
     deliveryDate,
     weddingDate,
+    receipts,
     refreshInvoiceNumber,
+    dispatch,
+    saveInvoiceWithReceipts,
   } = useInvoice();
 
   const customerDetails = selectedCustomer;
 
+    // Calculate paidAmount and balanceAmount
+    const paidAmount = receipts.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0);
+    const balanceAmount = totalAmount - paidAmount;
+  
   const handleSave = async () => {
-    if (!customerDetails) {
+    if (!selectedCustomer) {
       alert("Please select a customer to proceed.");
       return;
     }
@@ -31,13 +38,7 @@ const InvoiceSummary = () => {
         items: selectedItems.map(item => ({
           ...item,
           measurement: item.measurement || [
-            {
-              item: '',
-              sleeve: '',
-              waist: '',
-              length: '',
-              pantsize: '',
-            }
+            { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
           ],
         })),
         totalAmount,
@@ -45,9 +46,16 @@ const InvoiceSummary = () => {
         weddingDate,
       };
 
-      await saveInvoice(invoiceData);
-      await refreshInvoiceNumber();
-      alert('Invoice saved successfully!');
+      const result = await saveInvoiceWithReceipts(invoiceData, receipts);
+      
+      if (result.success) {
+        dispatch({ 
+          type: ACTIONS.UPDATE_INVOICE_STATUS,   
+          payload: result.invoice });
+        dispatch({ type: ACTIONS.RESET_RECEIPTS });
+        await refreshInvoiceNumber();
+        alert('Invoice and receipts saved successfully!');
+      }
     } catch (error) {
       console.error('Error saving invoice:', error);
       alert('Failed to save invoice. Please try again.');
@@ -85,6 +93,8 @@ const InvoiceSummary = () => {
         customer: customerDetails.mobile,
         items: formattedItems,
         totalAmount,
+        paidAmount,   
+        balanceAmount,
         deliveryDate,
         weddingDate
       });
@@ -145,6 +155,14 @@ const InvoiceSummary = () => {
 
         <Typography variant="h6" color="#CE5A67" sx={{ marginY: 1 }}>
           Total Amount: ₹{totalAmount.toLocaleString()}
+        </Typography>
+
+        <Typography variant="body1" gutterBottom>
+          Paid Amount: ₹{paidAmount.toLocaleString()}
+        </Typography>
+
+        <Typography variant="body1" gutterBottom>
+          Balance Amount: ₹{balanceAmount.toLocaleString()}
         </Typography>
       </Box>
       

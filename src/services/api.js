@@ -20,15 +20,16 @@ export const fetchItems = async () => {
 
 export const fetchLastInvoiceNumber = async () => {
   try {
-    const response = await fetch('/api/invoices/last-number');
-    if (!response.ok) {
-      throw new Error('Failed to fetch last invoice number');
-    }
+    const response = await fetch('/api/invoices/latest');
     const data = await response.json();
-    return data.lastInvoiceNumber || 'INV000';
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch latest invoice number');
+    }
+    
+    return data.data;
   } catch (error) {
-    console.error('Error fetching last invoice number:', error);
-    return 'INV000'; // fallback if no invoices exist yet
+    throw new Error(`Error fetching latest invoice number: ${error.message}`);
   }
 };
 
@@ -88,6 +89,29 @@ export const fetchInvoiceById = async (id) => {
   }
 };
 
+export const fetchInvoiceByNumber = async (invoiceNumber, action = null) => {
+  try {
+    const url = new URL(`/api/invoices/${invoiceNumber}`, window.location.origin);
+    if (action) {
+      url.searchParams.append('action', action);
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch invoice');
+    }
+    
+    return {
+      ...data.data,
+      navigation: data.navigation
+    };
+  } catch (error) {
+    throw new Error(`Error fetching invoice: ${error.message}`);
+  }
+};
+
 // Update an invoice
 export const updateInvoice = async (id, invoiceData) => {
   try {
@@ -128,24 +152,98 @@ export const deleteInvoice = async (id) => {
   }
 };
 // src/services/api.js
+// src/services/api.js
+
 export const createReceipts = async (receiptData) => {
   try {
-    const response = await fetch('/api/receipts', {
+    // Format the receipt data before sending
+    const formattedData = {
+      ...receiptData,
+      receipts: receiptData.receipts.map(receipt => ({
+        amount: parseFloat(receipt.amount),
+        date: receipt.date,
+        method: receipt.method,
+        note: receipt.note,
+        customer: receipt.customer,
+        invoiceNumber: receiptData.invoiceNumber,
+        transactionType: receiptData.transactionType || 'receipt',
+        sourcePage: receiptData.sourcePage || 'invoicing'
+      }))
+    };
+    
+    // Make the API call
+    const response = await fetch('/api/transactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(receiptData),
+      body: JSON.stringify(formattedData),
     });
-    
+
+    // Log for debugging
+    console.log('Sending receipt data:', formattedData);
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to create receipts');
     }
+
+    const result = await response.json();
     
-    return await response.json();
+    // Log successful response
+    console.log('Receipt creation response:', result);
+
+    return result;
   } catch (error) {
     console.error('Error creating receipts:', error);
     throw error;
   }
+};
+
+// Add a new function to fetch receipts for an invoice
+export const fetchReceiptsForInvoice = async (invoiceNumber) => {
+  try {
+    const response = await fetch(`/api/transactions?invoiceNumber=${invoiceNumber}`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch receipts');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching receipts:', error);
+    throw error;
+  }
+};
+
+// Add a function to validate receipt data
+export const validateReceiptData = (receiptData) => {
+  const errors = [];
+
+  if (!receiptData.receipts || !Array.isArray(receiptData.receipts)) {
+    errors.push('Invalid receipts data');
+  }
+
+  if (!receiptData.customerId) {
+    errors.push('Customer ID is required');
+  }
+
+  if (!receiptData.invoiceNumber) {
+    errors.push('Invoice number is required');
+  }
+
+  receiptData.receipts?.forEach((receipt, index) => {
+    if (!receipt.amount || isNaN(parseFloat(receipt.amount))) {
+      errors.push(`Invalid amount for receipt at index ${index}`);
+    }
+    if (!receipt.date) {
+      errors.push(`Missing date for receipt at index ${index}`);
+    }
+    if (!receipt.method) {
+      errors.push(`Missing payment method for receipt at index ${index}`);
+    }
+  });
+
+  return errors;
 };

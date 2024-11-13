@@ -1,42 +1,78 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
-// Create a context for accounts
+// Create the context
 const AccountsContext = createContext();
 
-// AccountsProvider to wrap your app and provide context
+// Provider component for accounts
 export const AccountsProvider = ({ children }) => {
-  const [accounts, setAccounts] = useState([]); // List of accounts (e.g., Rent, Commission)
-  const [transactions, setTransactions] = useState([]); // Transactions (income/expense)
-  const [balances, setBalances] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0 });
+  // Initialize accounts as an empty array to avoid "not iterable" errors
+  const [accounts, setAccounts] = useState([]);
 
-  // Add a new account
-  const addAccount = (account) => {
-    setAccounts((prev) => [...prev, account]);
-  };
-
-  // Add a new transaction (income or expense)
-  const addTransaction = (transaction) => {
-    setTransactions((prev) => [...prev, transaction]);
-    updateBalances(transaction); // Update balances after each transaction
-  };
-
-  // Update the balances based on transaction type (income or expense)
-  const updateBalances = (transaction) => {
-    let { totalIncome, totalExpense } = balances;
-    if (transaction.type === "income") {
-      totalIncome += transaction.amount;
-    } else if (transaction.type === "expense") {
-      totalExpense += transaction.amount;
+  // Fetch accounts from the API
+  const fetchAccounts = async () => {
+    try {
+      const response = await axios.get("/api/accounts");
+      setAccounts(response.data); // Update accounts state with fetched data
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
     }
-    setBalances({ totalIncome, totalExpense, netBalance: totalIncome - totalExpense });
   };
 
+  // Fetch accounts on component mount
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  // Add a new account and update the context
+  const addAccount = async (account) => {
+    try {
+      const response = await axios.post("/api/accounts", account);
+      setAccounts((prev) => [...prev, response.data]); // Append new account to the existing accounts list
+    } catch (error) {
+      console.error("Error adding account:", error);
+    }
+  };
+
+  // Update an existing account
+  const updateAccount = async (accountId, updatedAccount) => {
+    try {
+      const response = await axios.put(`/api/accounts/${accountId}`, updatedAccount);
+      setAccounts((prev) =>
+        prev.map((account) =>
+          account._id === accountId ? response.data : account
+        )
+      );
+    } catch (error) {
+      console.error("Error updating account:", error);
+    }
+  };
+
+  // Delete an account
+  const deleteAccount = async (accountId) => {
+    try {
+      await axios.delete(`/api/accounts/${accountId}`);
+      setAccounts((prev) => prev.filter((account) => account._id !== accountId)); // Remove the deleted account from the list
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  };
+
+  // Provide context values
   return (
-    <AccountsContext.Provider value={{ accounts, transactions, balances, addAccount, addTransaction }}>
+    <AccountsContext.Provider
+      value={{
+        accounts,
+        fetchAccounts,
+        addAccount,
+        updateAccount,
+        deleteAccount,
+      }}
+    >
       {children}
     </AccountsContext.Provider>
   );
 };
 
-// Custom hook to use AccountsContext
+// Custom hook to use the AccountsContext
 export const useAccounts = () => useContext(AccountsContext);
