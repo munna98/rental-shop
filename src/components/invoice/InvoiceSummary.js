@@ -25,86 +25,99 @@ const InvoiceSummary = () => {
     const paidAmount = receipts.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0);
     const balanceAmount = totalAmount - paidAmount;
   
-  const handleSave = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer to proceed.");
-      return;
-    }
-
-    try {
-      const invoiceData = {
-        invoiceNumber,
-        customer: selectedCustomer,
-        items: selectedItems.map(item => ({
-          ...item,
-          measurement: item.measurement || [
-            { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
-          ],
-        })),
-        totalAmount,
-        deliveryDate,
-        weddingDate,
-      };
-
-      const result = await saveInvoiceWithReceipts(invoiceData, receipts);
-      
-      if (result.success) {
-        dispatch({ 
-          type: ACTIONS.UPDATE_INVOICE_STATUS,   
-          payload: result.invoice });
-        dispatch({ type: ACTIONS.RESET_RECEIPTS });
-        await refreshInvoiceNumber();
-        alert('Invoice and receipts saved successfully!');
+    const handleSave = async () => {
+      if (!selectedCustomer) {
+        alert("Please select a customer to proceed.");
+        return null;
       }
-    } catch (error) {
-      console.error('Error saving invoice:', error);
-      alert('Failed to save invoice. Please try again.');
-    }
-  };
+    
+      try {
+        const invoiceData = {
+          invoiceNumber,
+          customer: selectedCustomer,
+          items: selectedItems.map(item => ({
+            ...item,
+            measurement: item.measurement || [
+              { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
+            ],
+          })),
+          totalAmount,
+          deliveryDate,
+          weddingDate,
+        };
+    
+        const result = await saveInvoiceWithReceipts(invoiceData, receipts);
+        
+        if (result.success) {
+          dispatch({ 
+            type: ACTIONS.UPDATE_INVOICE_STATUS,   
+            payload: result.invoice 
+          });
+          dispatch({ type: ACTIONS.RESET_RECEIPTS });
+          await refreshInvoiceNumber();
+          alert('Invoice and receipts saved successfully!');
+          return result;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error saving invoice:', error);
+        alert(
+          error.message.includes('Critical error') 
+            ? 'A critical error occurred. Please contact support.'
+            : 'Failed to save invoice. Please try again.'
+        );
+        return null;
+      }
+    };
 
-  const handleSaveAndSendWhatsApp = async () => {
-    if (!customerDetails) {
-      alert("Please select a customer to proceed.");
-      return;
-    }
-
-    try {
-      // First save the invoice
-      await handleSave();
-
-      // Then generate and open WhatsApp link
-      const formattedItems = selectedItems.map(item => ({
-        name: item.name,
-        measurement: item.measurement || [
-          {
-            item: '',
-            sleeve: '',
-            waist: '',
-            length: '',
-            pantsize: '',
-          }
-        ],
-        rentRate: item.rentRate
-      }));
-
-      const whatsappMessage = generateWhatsAppLink({
-        invoiceNumber,
-        customerName: customerDetails.name,
-        customer: customerDetails.mobile,
-        items: formattedItems,
-        totalAmount,
-        paidAmount,   
-        balanceAmount,
-        deliveryDate,
-        weddingDate
-      });
-
-      window.open(whatsappMessage, '_blank');
-    } catch (error) {
-      console.error('Error in save and send:', error);
-      alert('Failed to complete the operation. Please try again.');
-    }
-  };
+    const handleSaveAndSendWhatsApp = async () => {
+      if (!customerDetails) {
+        alert("Please select a customer to proceed.");
+        return;
+      }
+    
+      try {
+        // First save the invoice and get the result
+        const saveResult = await handleSave();
+        
+        // Only proceed if save was successful
+        if (!saveResult?.success) {
+          throw new Error('Failed to save invoice and receipts');
+        }
+    
+        // Then generate and open WhatsApp link
+        const formattedItems = selectedItems.map(item => ({
+          name: item.name,
+          measurement: item.measurement || [
+            {
+              item: '',
+              sleeve: '',
+              waist: '',
+              length: '',
+              pantsize: '',
+            }
+          ],
+          rentRate: item.rentRate
+        }));
+    
+        const whatsappMessage = generateWhatsAppLink({
+          invoiceNumber,
+          customerName: customerDetails.name,
+          customer: customerDetails.mobile,
+          items: formattedItems,
+          totalAmount,
+          paidAmount: saveResult.invoice.paidAmount,   
+          balanceAmount: totalAmount - saveResult.invoice.paidAmount,
+          deliveryDate,
+          weddingDate
+        });
+    
+        window.open(whatsappMessage, '_blank');
+      } catch (error) {
+        console.error('Error in save and send:', error);
+        alert('Failed to complete the operation. Please try again.');
+      }
+    };
 
   return (
     <Box

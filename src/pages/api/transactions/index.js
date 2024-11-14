@@ -22,23 +22,21 @@ export default async function handler(req, res) {
 
     // Process each receipt/payment individually
     for (const receiptData of receipts) {
-      // Get the last serial number for this transaction type
       const lastTransaction = await Transaction.findOne({ transactionType })
         .sort({ serialNumber: -1 })
         .select("serialNumber");
-
-      // Calculate next serial number
-      let nextNumber = 1;
-      if (lastTransaction) {
-        // Extract numeric part of the last serial number and increment it
-        nextNumber = parseInt(lastTransaction.serialNumber.slice(1)) + 1;
-      }
-
-      // Generate serial number with appropriate prefix
+    
+      let nextNumber = lastTransaction ? parseInt(lastTransaction.serialNumber.slice(1)) + 1 : 1;
+    
       const prefix = transactionType === "receipt" ? "R" : "P";
       const formattedSerialNumber = `${prefix}${nextNumber.toString().padStart(3, '0')}`;
-
-      // Create the transaction with unique serial number
+    
+      // Check for duplicate serial numbers
+      const exists = await Transaction.findOne({ serialNumber: formattedSerialNumber });
+      if (exists) {
+        throw new Error(`Duplicate serial number ${formattedSerialNumber} detected.`);
+      }
+    
       const newTransaction = await Transaction.create({
         customer: customerId,
         transactionType,
@@ -49,10 +47,10 @@ export default async function handler(req, res) {
         note: receiptData.note,
         sourcePage,
       });
-
+    
       createdTransactions.push(newTransaction);
     }
-
+    
     return res.status(201).json({
       transactions: createdTransactions,
       message: "Transactions created successfully",

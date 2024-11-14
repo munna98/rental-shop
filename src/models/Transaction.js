@@ -18,7 +18,7 @@ const transactionSchema = new mongoose.Schema({
   serialNumber: {
     type: String,
     required: true,
-    unique: true,
+  
   },
   amount: {
     type: Number,

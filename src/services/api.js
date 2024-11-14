@@ -200,6 +200,28 @@ export const createReceipts = async (receiptData) => {
   }
 };
 
+export const deleteReceipts = async (transactionIds) => {
+  try {
+    const response = await fetch('/api/transactions/delete', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ transactionIds }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete receipts');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting receipts:', error);
+    throw error;
+  }
+};
+
 // Add a new function to fetch receipts for an invoice
 export const fetchReceiptsForInvoice = async (invoiceNumber) => {
   try {

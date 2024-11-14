@@ -58,8 +58,9 @@ export const generateWhatsAppLink = ({
 📅 Date: ${new Date().toLocaleDateString('en-IN')}
 
 👤 *Customer Details*
-Name: ${customerName}${formattedWeddingDate ? `\n💒 Wedding Date: ${formattedWeddingDate}` : ''}${formattedDeliveryDate ? `\n🚚 Delivery Date: ${formattedDeliveryDate}` : ''}
-
+Name: ${customerName}
+      ${formattedDeliveryDate ? `\n🚚 Delivery Date: ${formattedDeliveryDate}` : ''}
+      ${formattedWeddingDate ? `\n💒 Wedding Date: ${formattedWeddingDate}` : ''}
 📝 *Order Details*
 ${itemsList}
 

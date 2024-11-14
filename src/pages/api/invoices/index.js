@@ -78,50 +78,11 @@ export default async function handler(req, res) {
         status,
         paymentStatus,
         notes,
-        receipts: [] // Initialize empty receipts array
+        receipts: receipts.map(receipt => receipt.id)
       });
   
       const savedInvoice = await invoice.save();
   
-      let updatedPaidAmount = 0; // Track the total paid amount
-  
-      // If there are transactions (receipts), create them
-      if (receipts.length > 0) {
-        const transactionPromises = receipts.map(receipt => {
-          const newTransaction = new Transaction({
-            ...receipt,
-            customer: customer._id,
-            transactionType: "receipt", // Set transaction type as receipt
-            sourcePage: 'invoicing',
-            invoice: savedInvoice._id
-          });
-          return newTransaction.save();
-        });
-  
-        const savedTransactions = await Promise.all(transactionPromises);
-  
-        // Add transaction IDs to the invoice
-        savedInvoice.receipts = savedTransactions.map(receipt => receipt._id);
-  
-        // Calculate the total paid amount from the receipts
-        updatedPaidAmount = receipts.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0);
-  
-        // Update the balanceAmount and paymentStatus based on receipts
-        savedInvoice.paidAmount = updatedPaidAmount;
-        savedInvoice.balanceAmount = savedInvoice.totalAmount - updatedPaidAmount;
-  
-        // Set payment status based on the paidAmount
-        if (updatedPaidAmount >= savedInvoice.totalAmount) {
-          savedInvoice.paymentStatus = 'completed';
-        } else if (updatedPaidAmount > 0) {
-          savedInvoice.paymentStatus = 'partial';
-        } else {
-          savedInvoice.paymentStatus = 'pending';
-        }
-  
-        // Save the updated invoice
-        await savedInvoice.save();
-      }
   
       // Populate the invoice with all related data
       const populatedInvoice = await Invoice.findById(savedInvoice._id)
