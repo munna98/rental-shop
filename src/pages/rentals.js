@@ -24,9 +24,10 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import EventIcon from "@mui/icons-material/Event";
-import PersonIcon from "@mui/icons-material/Person";
-import InventoryIcon from "@mui/icons-material/Inventory";
+import TaxiAlertIcon from "@mui/icons-material/TaxiAlert";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import ReturnConfirmationDialog from "@/hooks/useReturnConfirmation";
@@ -274,10 +275,10 @@ const RentalsPage = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={3}>
           <StatsCard
-            icon={InventoryIcon}
+            icon={EventAvailableIcon}
             value={stats.totalRented}
             label="Total Rented"
-            iconColor="primary.main"
+            iconColor="success.main"
           />
         </Grid>
         <Grid item xs={12} sm={3}>
@@ -290,7 +291,7 @@ const RentalsPage = () => {
         </Grid>
         <Grid item xs={12} sm={3}>
           <StatsCard
-            icon={PersonIcon}
+            icon={TaxiAlertIcon}
             value={stats.overdue}
             label="Late Delivery"
             iconColor="error.main"
@@ -298,7 +299,7 @@ const RentalsPage = () => {
         </Grid>
         <Grid item xs={12} sm={3}>
           <StatsCard
-            icon={EventIcon}
+            icon={EventRepeatIcon}
             value={stats.weddingDatePassed}
             label="Wedding Date Passed"
             iconColor="warning.main"

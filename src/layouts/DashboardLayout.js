@@ -39,6 +39,14 @@ const DashboardLayout = ({ children, toggleTheme, isDarkMode }) => {
     { text: 'Help', path: '/help', icon: <HelpOutlineIcon /> },
   ];
 
+  const drawerStyles = {
+    width: 280,
+    background: theme.palette.mode === 'dark'
+      ? `linear-gradient(135deg, ${theme.palette.grey[900]}, ${theme.palette.grey[800]})`
+      : `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
+    color: theme.palette.mode === 'dark' ? theme.palette.grey[200] : theme.palette.common.white,
+  };
+
   return (
     <Box>
       <AppBar position="static">
@@ -62,11 +70,7 @@ const DashboardLayout = ({ children, toggleTheme, isDarkMode }) => {
                 open={drawerOpen}
                 onClose={handleDrawerToggle}
                 PaperProps={{
-                  sx: {
-                    width: 280,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
-                    color: theme.palette.common.white,
-                  },
+                  sx: drawerStyles,
                 }}
               >
                 <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
@@ -90,10 +94,21 @@ const DashboardLayout = ({ children, toggleTheme, isDarkMode }) => {
                       sx={{
                         '&:hover': { backgroundColor: theme.palette.action.hover },
                         backgroundColor:
-                          router.pathname === item.path ? theme.palette.action.selected : 'inherit',
+                          router.pathname === item.path
+                            ? theme.palette.action.selected
+                            : 'inherit',
+                        color: 'inherit',
                       }}
                     >
-                      <ListItemIcon sx={{ color: 'inherit' }}>{item.icon}</ListItemIcon>
+                      <ListItemIcon
+                        sx={{
+                          color: theme.palette.mode === 'dark'
+                            ? theme.palette.grey[200]
+                            : theme.palette.common.white,
+                        }}
+                      >
+                        {item.icon}
+                      </ListItemIcon>
                       <ListItemText primary={item.text} />
                     </ListItem>
                   ))}
