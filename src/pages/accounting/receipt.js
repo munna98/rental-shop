@@ -16,63 +16,74 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Autocomplete
+  Autocomplete,
+  Chip
 } from "@mui/material";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useReceipt } from "@/context/ReceiptContext";
+import { useAccounts } from "@/context/AccountsContext";
 
 const ReceiptPage = () => {
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const { customers, receipts, loading, error, addReceipt, submitReceipts } = useReceipt();
+  const { customers, receipts, loading: receiptLoading, error, addReceipt, submitReceipts } = useReceipt();
+  const { accounts, loading: accountsLoading } = useAccounts();
 
   // Local form state
   const [amount, setAmount] = useState("");
   const [receiptMethod, setReceiptMethod] = useState("cash");
   const [note, setNote] = useState("");
-  const [customer, setCustomer] = useState("");
+  const [selectedEntity, setSelectedEntity] = useState(null);
   const [isValidAmount, setIsValidAmount] = useState(true);
-  const [customerError, setCustomerError] = useState(false);
+  const [entityError, setEntityError] = useState(false);
   const [receiptDate, setReceiptDate] = useState(
     new Date().toISOString().split('T')[0]
-  );  
+  );
 
-  // Handle error notifications from context
-  useEffect(() => {
-    if (error) {
-      showSnackbar(error, "error");
-    }
-  }, [error, showSnackbar]);
+  // Combine customers and accounts into a single array with type identification
+  const entities = [
+    ...customers.map(customer => ({
+      ...customer,
+      entityType: 'customer',
+      displayType: 'Customer',
+      searchLabel: customer.name
+    })),
+    ...accounts.map(account => ({
+      ...account,
+      entityType: 'account',
+      displayType: `Account (${account.type})`,
+      searchLabel: `${account.name} - ${account.category}`
+    }))
+  ];
 
   const resetForm = () => {
     setAmount("");
     setReceiptMethod("cash");
     setNote("");
     setIsValidAmount(true);
-    setCustomerError(false);
+    setEntityError(false);
+    setSelectedEntity(null);
   };
 
-  const CustomerSearchInput = ({
-    value,
-    onChange,
-    error,
-    helperText,
-  }) => {
+  const EntitySearchInput = () => {
     return (
       <Autocomplete
-        value={value ? customers.find((c) => c._id === value) || null : null}
+        value={selectedEntity}
         onChange={(event, newValue) => {
-          onChange(newValue?._id || "");
-          setCustomerError(false);
+          setSelectedEntity(newValue);
+          setEntityError(false);
         }}
-        options={customers}
-        getOptionLabel={(option) => option.name || ""}
-        isOptionEqualToValue={(option, value) => option._id === value._id}
+        options={entities}
+        getOptionLabel={(option) => option.searchLabel || ""}
+        groupBy={(option) => option.entityType}
+        isOptionEqualToValue={(option, value) => 
+          option._id === value._id && option.entityType === value.entityType
+        }
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Customer"
-            error={error || customerError}
-            helperText={helperText || (customerError && "Please select a customer first")}
+            label="Select Customer or Account"
+            error={entityError}
+            helperText={entityError ? "Please select a customer or account" : ""}
             fullWidth
           />
         )}
@@ -80,11 +91,18 @@ const ReceiptPage = () => {
           <Box component="li" {...props}>
             <Box sx={{ display: "flex", flexDirection: "column" }}>
               <Typography variant="body1">{option.name}</Typography>
-              {option.code && (
-                <Typography variant="caption" color="text.secondary">
-                  {option.code}
-                </Typography>
-              )}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip 
+                  label={option.displayType}
+                  size="small"
+                  color={option.entityType === 'customer' ? 'primary' : 'secondary'}
+                />
+                {option.entityType === 'account' && (
+                  <Typography variant="caption" color="text.secondary">
+                    {option.category}
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
         )}
@@ -93,7 +111,8 @@ const ReceiptPage = () => {
           return options.filter(
             (option) =>
               option.name.toLowerCase().includes(filterValue) ||
-              (option.code && option.code.toLowerCase().includes(filterValue))
+              (option.category && option.category.toLowerCase().includes(filterValue)) ||
+              (option.type && option.type.toLowerCase().includes(filterValue))
           );
         }}
         fullWidth
@@ -104,15 +123,13 @@ const ReceiptPage = () => {
   const validateForm = () => {
     let isValid = true;
 
-    if (!customer) {
-      setCustomerError(true);
-      // showSnackbar("Please select a customer first", "error");
+    if (!selectedEntity) {
+      setEntityError(true);
       isValid = false;
     }
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       setIsValidAmount(false);
-      // showSnackbar("Please enter a valid amount", "error");
       isValid = false;
     }
 
@@ -129,7 +146,13 @@ const ReceiptPage = () => {
       method: receiptMethod,
       date: receiptDate,
       note,
-      customerId: customer,
+      entityType: selectedEntity.entityType,
+      entityId: selectedEntity._id,
+      entityName: selectedEntity.name,
+      entityDetails: selectedEntity.entityType === 'account' ? {
+        type: selectedEntity.type,
+        category: selectedEntity.category
+      } : null
     };
 
     const result = addReceipt(newReceipt);
@@ -142,8 +165,8 @@ const ReceiptPage = () => {
   };
 
   const handleSubmitReceipts = async () => {
-    if (!customer) {
-      showSnackbar("Please select a customer", "error");
+    if (!selectedEntity) {
+      showSnackbar("Please select a customer or account", "error");
       return;
     }
 
@@ -152,17 +175,17 @@ const ReceiptPage = () => {
       return;
     }
 
-    const result = await submitReceipts(customer);
+    const result = await submitReceipts(selectedEntity._id, selectedEntity.entityType);
     
     if (result.success) {
       showSnackbar("Receipts submitted successfully", "success");
-      setCustomer("");
+      resetForm();
     } else {
       showSnackbar(result.error, "error");
     }
   };
 
-  if (loading) {
+  if (receiptLoading || accountsLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>Loading...</Typography>
@@ -181,17 +204,7 @@ const ReceiptPage = () => {
             </Typography>
 
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <CustomerSearchInput
-                value={customer}
-                onChange={(newValue) => setCustomer(newValue)}
-                error={customerError || (!customer && receipts.length > 0)}
-                helperText={
-                  customerError
-                    ? "Please select a customer first"
-                    : (!customer && receipts.length > 0 && "Please select a customer") ||
-                      "Select the customer for the receipt"
-                }
-              />
+              <EntitySearchInput />
             </FormControl>
 
             <TextField
@@ -270,7 +283,8 @@ const ReceiptPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Customer</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Type</TableCell>
                       <TableCell>Date</TableCell>
                       <TableCell>Amount</TableCell>
                       <TableCell>Method</TableCell>
@@ -279,8 +293,13 @@ const ReceiptPage = () => {
                   <TableBody>
                     {receipts.map((receipt, index) => (
                       <TableRow key={index}>
+                        <TableCell>{receipt.entityName}</TableCell>
                         <TableCell>
-                          {customers.find(c => c._id === customer)?.name || ''}
+                          <Chip 
+                            label={receipt.entityType === 'customer' ? 'Customer' : `Account (${receipt.entityDetails?.type})`}
+                            size="small"
+                            color={receipt.entityType === 'customer' ? 'primary' : 'secondary'}
+                          />
                         </TableCell>
                         <TableCell>{receipt.date}</TableCell>
                         <TableCell>₹{receipt.amount}</TableCell>
@@ -303,7 +322,7 @@ const ReceiptPage = () => {
                 variant="contained"
                 color="secondary"
                 onClick={handleSubmitReceipts}
-                disabled={!customer}
+                disabled={!selectedEntity}
                 fullWidth
                 sx={{ mt: 2 }}
               >

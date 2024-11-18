@@ -8,9 +8,9 @@ const Summary = () => {
   return (
     <Box>
       <Typography variant="h6">Summary</Typography>
-      <Typography>Income: {balances.totalIncome}</Typography>
+      {/* <Typography>Income: {balances.totalIncome}</Typography>
       <Typography>Expenses: {balances.totalExpense}</Typography>
-      <Typography>Net Balance: {balances.netBalance}</Typography>
+      <Typography>Net Balance: {balances.netBalance}</Typography> */}
     </Box>
   );
 };

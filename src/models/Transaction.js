@@ -1,10 +1,16 @@
 import mongoose from 'mongoose';
 
 const transactionSchema = new mongoose.Schema({
-  customer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Customer',
+  entityType: {
+    type: String,
+    enum: ['customer', 'account'],
     required: true,
+  },
+  entityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    // Using refPath to dynamically reference either Customer or Account
+    refPath: 'entityType'
   },
   relatedInvoice: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -18,7 +24,6 @@ const transactionSchema = new mongoose.Schema({
   serialNumber: {
     type: String,
     required: true,
-  
   },
   amount: {
     type: Number,
@@ -43,8 +48,11 @@ const transactionSchema = new mongoose.Schema({
   sourcePage: {
     type: String,
     enum: ['receipt', 'invoicing', 'payment'],
-    required: true,  // Tracks whether the receipt is from the ReceiptPage or InvoicingPage or PaymentPage
+    required: true,
   }
 });
+
+// Update the model name mappings for refPath
+transactionSchema.path('entityType').enum(['customer', 'account']);
 
 export default mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);

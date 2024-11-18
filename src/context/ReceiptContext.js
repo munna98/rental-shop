@@ -7,13 +7,15 @@ export const ACTIONS = {
   ADD_RECEIPT: 'ADD_RECEIPT',
   RESET_RECEIPTS: 'RESET_RECEIPTS',
   SET_LOADING: 'SET_LOADING',
-  SET_ERROR: 'SET_ERROR'
+  SET_ERROR: 'SET_ERROR',
+  SET_SUBMITTING: 'SET_SUBMITTING'
 };
 
 const initialState = {
   customers: [],
   receipts: [],
   loading: false,
+  submitting: false,
   error: null,
 };
 
@@ -29,8 +31,10 @@ function receiptReducer(state, action) {
       return { ...state, receipts: [] };
     case ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
+    case ACTIONS.SET_SUBMITTING:
+      return { ...state, submitting: action.payload };
     case ACTIONS.SET_ERROR:
-      return { ...state, error: action.payload, loading: false };
+      return { ...state, error: action.payload, loading: false, submitting: false };
     default:
       return state;
   }
@@ -48,48 +52,114 @@ export function ReceiptProvider({ children }) {
         const customers = await fetchCustomers();
         dispatch({ type: ACTIONS.SET_CUSTOMERS, payload: customers });
       } catch (error) {
-        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load customers' });
+        dispatch({ 
+          type: ACTIONS.SET_ERROR, 
+          payload: 'Failed to load customers' 
+        });
       }
     };
     loadCustomers();
   }, []);
 
   const addReceipt = (receipt) => {
-    if (!receipt.customerId) {
-      return { success: false, error: "Customer selection is required" };
-    }
-    dispatch({ type: ACTIONS.ADD_RECEIPT, payload: receipt });
-    return { success: true };
-  };
-
-  const submitReceipts = async (customerId) => {
-    if (!customerId || state.receipts.length === 0) {
-      return { success: false, error: "Please select a customer and add at least one receipt" };
+    if (!receipt.entityId || !receipt.entityType) {
+      return { 
+        success: false, 
+        error: "Please select a customer or account" 
+      };
     }
 
     try {
-      const receiptData = {
-        receipts: state.receipts,
-        customerId,
-        transactionType: "receipt",
-      };
-      await createReceipts(receiptData);
-      dispatch({ type: ACTIONS.RESET_RECEIPTS });
+      dispatch({ type: ACTIONS.ADD_RECEIPT, payload: receipt });
       return { success: true };
     } catch (error) {
-      dispatch({ type: ACTIONS.SET_ERROR, payload: "Failed to submit receipts" });
-      return { success: false, error: "Failed to submit receipts" };
+      return { 
+        success: false, 
+        error: "Failed to add receipt" 
+      };
+    }
+  };
+
+  const submitReceipts = async (entityId, entityType) => {
+    if (state.submitting) {
+      return { 
+        success: false, 
+        error: "Submission already in progress" 
+      };
+    }
+
+    if (!entityId || !entityType) {
+      return { 
+        success: false, 
+        error: "Please select a customer or account" 
+      };
+    }
+
+    if (state.receipts.length === 0) {
+      return { 
+        success: false, 
+        error: "Please add at least one receipt" 
+      };
+    }
+
+    dispatch({ type: ACTIONS.SET_SUBMITTING, payload: true });
+
+    try {
+      const receiptData = {
+        entityId,
+        entityType,
+        transactionType: "receipt",
+        receipts: state.receipts.map(receipt => ({
+          amount: receipt.amount,
+          method: receipt.method,
+          date: receipt.date,
+          note: receipt.note || ''
+        }))
+      };
+
+      const response = await createReceipts(receiptData);
+
+      // Handle partial success
+      if (response.status === 207) {
+        dispatch({ type: ACTIONS.SET_SUBMITTING, payload: false });
+        return {
+          success: true,
+          warning: "Some receipts could not be processed",
+          errors: response.errors
+        };
+      }
+
+      // Handle complete success
+      dispatch({ type: ACTIONS.RESET_RECEIPTS });
+      dispatch({ type: ACTIONS.SET_SUBMITTING, payload: false });
+      return { success: true };
+
+    } catch (error) {
+      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
+      dispatch({ type: ACTIONS.SET_SUBMITTING, payload: false });
+      return { 
+        success: false, 
+        error: error.message || "Failed to submit receipts" 
+      };
     }
   };
 
   const value = {
-    ...state,
+    customers: state.customers,
+    receipts: state.receipts,
+    loading: state.loading,
+    submitting: state.submitting,
+    error: state.error,
     addReceipt,
     submitReceipts,
     dispatch,
   };
 
-  return <ReceiptContext.Provider value={value}>{children}</ReceiptContext.Provider>;
+  return (
+    <ReceiptContext.Provider value={value}>
+      {children}
+    </ReceiptContext.Provider>
+  );
 }
 
 export function useReceipt() {

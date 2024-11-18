@@ -8,7 +8,7 @@ const Overview = () => {
   return (
     <Box>
       <Typography variant="h6">Overview</Typography>
-      <List>
+      {/* <List>
         {overviews.map((overview) => (
           <ListItem key={overview.id}>
             <ListItemText
@@ -17,7 +17,7 @@ const Overview = () => {
             />
           </ListItem>
         ))}
-      </List>
+      </List> */}
     </Box>
   );
 };
