@@ -174,79 +174,18 @@ export const InvoiceProvider = ({ children }) => {
     refreshInvoiceNumber();
   };
 
-  // const saveInvoiceWithReceipts = async (invoiceData, receipts) => {
-  //   try {
-  //     // First create the receipts
-  //     const receiptData = {
-  //       receipts: receipts.map((receipt) => ({
-  //         ...receipt,
-  //         customerId: invoiceData.customer._id,
-  //         invoiceNumber: invoiceData.invoiceNumber,
-  //         transactionType: "receipt",
-  //         sourcePage: "invoicing",
-  //       })),
-  //       customerId: invoiceData.customer._id,
-  //       invoiceNumber: invoiceData.invoiceNumber,
-  //       transactionType: "receipt",
-  //       sourcePage: "invoicing",
-  //     };
-  
-  //     const transactionResult = await createReceipts(receiptData);
-  
-  //     if (!transactionResult?.transactions) {
-  //       throw new Error('Failed to create receipts');
-  //     }
-  
-  //     const updatedReceipts = transactionResult.transactions.map(
-  //       (transaction) => ({
-  //         id: transaction._id,
-  //         amount: transaction.amount,
-  //         date: transaction.date,
-  //         method: transaction.method,
-  //         serialNumber: transaction.serialNumber,
-  //         note: transaction.note,
-  //       })
-  //     );
-  
-  //     const totalPaidAmount = receipts.reduce(
-  //       (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-  //       0
-  //     );
-  
-  //     const completeInvoiceData = {
-  //       ...invoiceData,
-  //       receipts: updatedReceipts,
-  //       paidAmount: totalPaidAmount,
-  //       paymentStatus: totalPaidAmount >= invoiceData.totalAmount ? "completed" : "pending",
-  //     };
-  
-  //     const savedInvoice = await saveInvoice(completeInvoiceData);
-  
-  //     if (!savedInvoice) {
-  //       // If invoice save fails, we should ideally rollback the receipt creation
-  //       // This would require implementing a deleteReceipts function
-  //       throw new Error('Failed to save invoice');
-  //     }
-  
-  //     // Reset the invoice after successful save
-  //     resetInvoice();
-  
-  //     return {
-  //       success: true,
-  //       invoice: savedInvoice,
-  //       transactions: transactionResult.transactions,
-  //     };
-  //   } catch (error) {
-  //     console.error("Failed to save invoice and receipts", error);
-  //     throw new Error(error.message || "Failed to save invoice and receipts");
-  //   }
-  // };
 
   const saveInvoiceWithReceipts = async (invoiceData, receipts) => {
     let createdTransactions = [];
     
     try {
-      // First create the receipts/transactions
+      // Calculate total paid amount from receipts
+      const totalPaidAmount = receipts.reduce(
+        (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+        0
+      );
+  
+      // Prepare receipt data
       const receiptData = {
         receipts: receipts.map((receipt) => ({
           ...receipt,
@@ -268,7 +207,6 @@ export const InvoiceProvider = ({ children }) => {
         throw new Error('Failed to create receipts');
       }
   
-      // Store created transactions for potential rollback
       createdTransactions = transactionResult.transactions;
   
       // Format the receipts with their IDs and other details
@@ -283,25 +221,30 @@ export const InvoiceProvider = ({ children }) => {
         })
       );
   
-      const totalPaidAmount = receipts.reduce(
-        (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-        0
-      );
-  
+      // Prepare complete invoice data with payment information
       const completeInvoiceData = {
         ...invoiceData,
         receipts: updatedReceipts,
         paidAmount: totalPaidAmount,
-        paymentStatus: totalPaidAmount >= invoiceData.totalAmount ? "completed" : "pending",
+        balanceAmount: invoiceData.totalAmount - totalPaidAmount,
+        paymentStatus: totalPaidAmount >= invoiceData.totalAmount 
+          ? "completed" 
+          : totalPaidAmount > 0 
+            ? "partial" 
+            : "pending",
       };
   
       const savedInvoice = await saveInvoice(completeInvoiceData);
-  
+
       if (!savedInvoice) {
-        // If invoice save fails, rollback the transactions
+        // If invoice save fails, attempt to delete the created transactions
+        if (createdTransactions.length > 0) {
+          const transactionIds = createdTransactions.map(t => t._id);
+          await deleteReceipts(transactionIds);
+        }
         throw new Error('Failed to save invoice');
       }
-  
+
       // Reset the invoice after successful save
       resetInvoice();
   
@@ -310,6 +253,7 @@ export const InvoiceProvider = ({ children }) => {
         invoice: savedInvoice,
         transactions: transactionResult.transactions,
       };
+  
     } catch (error) {
       // Rollback transactions if they were created
       if (createdTransactions.length > 0) {
@@ -319,9 +263,8 @@ export const InvoiceProvider = ({ children }) => {
           console.log('Successfully rolled back transactions');
         } catch (rollbackError) {
           console.error('Error rolling back transactions:', rollbackError);
-          // You might want to log this to an error tracking service
           throw new Error(
-            'Critical error: Failed to rollback transactions. Manual cleanup may be required. ' +
+            'Error: Failed to rollback transactions. Manual cleanup may be required. ' +
             'Original error: ' + error.message
           );
         }

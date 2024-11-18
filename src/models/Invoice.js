@@ -41,9 +41,14 @@ const invoiceItemSchema = new mongoose.Schema({
   name: { 
     type: String 
   }, // Optional: Store item name directly for easier reference
-  category: { 
-    type: String 
-  } // Optional: Store category directly for easier reference
+  status:{
+    type: String, 
+  },
+  deliveryStatus: {
+    type: String,
+    enum: ['Pending', 'Delivered', 'Overdue'],
+    default: 'Pending'
+  },
 });
 
 const invoiceSchema = new mongoose.Schema({

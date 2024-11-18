@@ -1,3 +1,4 @@
+// src/components/invoice/SelectedItems.js
 import React, { useState } from 'react';
 import {
   Table,
@@ -18,19 +19,21 @@ import {
   IconButton,
   Tooltip,
   Grid,
-  Collapse
+  Collapse,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { useInvoice } from '@/context/InvoiceContext';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 const SelectedItems = () => {
-  const { selectedItems, handleRemoveItem, dispatch } = useInvoice();
+  const { selectedItems, dispatch } = useInvoice();
+  const { showSnackbar } = useSnackbar();
   const [editItem, setEditItem] = useState(null);
   const [editRate, setEditRate] = useState('');
   const [editMeasurements, setEditMeasurements] = useState({
@@ -44,16 +47,23 @@ const SelectedItems = () => {
   const [expandedRows, setExpandedRows] = useState({});
 
   const toggleRowExpansion = (uniqueId) => {
-    setExpandedRows(prev => ({
+    setExpandedRows((prev) => ({
       ...prev,
-      [uniqueId]: !prev[uniqueId]
+      [uniqueId]: !prev[uniqueId],
     }));
+  };
+
+  const handleRemoveItem = (uniqueId) => {
+    dispatch({
+      type: 'REMOVE_ITEM',
+      payload: uniqueId,
+    });
+    showSnackbar('Item removed successfully!', 'info');
   };
 
   const handleEditClick = (item) => {
     setEditItem(item);
     setEditRate(item.rentRate.toString());
-    // Set measurements from the first measurement object in the array
     const measurementData = item.measurement?.[0] || {
       item: '',
       sleeve: '',
@@ -79,30 +89,28 @@ const SelectedItems = () => {
   };
 
   const handleMeasurementChange = (field) => (e) => {
-    setEditMeasurements(prev => ({
+    setEditMeasurements((prev) => ({
       ...prev,
-      [field]: e.target.value ? Number(e.target.value) : ''
+      [field]: e.target.value ? Number(e.target.value) : '',
     }));
   };
 
   const handleSaveEdit = () => {
     if (!editItem) return;
-
-    // Remove old item
     handleRemoveItem(editItem.uniqueId);
 
-    // Add updated item
     const updatedItem = {
       ...editItem,
       measurement: [{ ...editMeasurements }],
-      rentRate: parseFloat(editRate)
+      rentRate: parseFloat(editRate),
     };
 
     dispatch({
       type: 'ADD_ITEM',
-      payload: updatedItem
+      payload: updatedItem,
     });
 
+    showSnackbar('Item updated successfully!', 'success');
     handleCloseDialog();
   };
 
@@ -113,28 +121,25 @@ const SelectedItems = () => {
 
   const formatMeasurements = (measurements) => {
     if (!measurements || !measurements[0]) return 'No measurements';
-    
     const measurementObj = measurements[0];
     const formatted = [];
-    
     if (measurementObj.item) formatted.push(`Item: ${measurementObj.item}`);
     if (measurementObj.sleeve) formatted.push(`Sleeve: ${measurementObj.sleeve}`);
     if (measurementObj.waist) formatted.push(`Waist: ${measurementObj.waist}`);
     if (measurementObj.length) formatted.push(`Length: ${measurementObj.length}`);
     if (measurementObj.pantsize) formatted.push(`Pant: ${measurementObj.pantsize}`);
-    
     return formatted.length > 0 ? formatted.join(' | ') : 'No measurements';
   };
 
   return (
     <>
-      <TableContainer 
-        component={Paper} 
-        sx={{ 
+      <TableContainer
+        component={Paper}
+        sx={{
           marginBottom: 2,
           boxShadow: 2,
           borderRadius: 2,
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
       >
         <Box sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
@@ -163,20 +168,24 @@ const SelectedItems = () => {
             ) : (
               selectedItems.map((item) => (
                 <React.Fragment key={item.uniqueId}>
-                  <TableRow 
-                    sx={{ '&:hover': { backgroundColor: '#fafafa' } }}
-                  >
+                  <TableRow sx={{ '&:hover': { backgroundColor: '#fafafa' } }}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{`₹${item.rentRate.toLocaleString()}`}</TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" sx={{ cursor: 'pointer' }} onClick={() => toggleRowExpansion(item.uniqueId)}>
-                          {formatMeasurements(item.measurement)}
-                        </Typography>
-                        <IconButton size="small" onClick={() => toggleRowExpansion(item.uniqueId)}>
-                          {expandedRows[item.uniqueId] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </IconButton>
-                      </Box>
+                      <Tooltip title={formatMeasurements(item.measurement)}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => toggleRowExpansion(item.uniqueId)}
+                          >
+                            {formatMeasurements(item.measurement)}
+                          </Typography>
+                          <IconButton size="small" onClick={() => toggleRowExpansion(item.uniqueId)}>
+                            {expandedRows[item.uniqueId] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                     <TableCell align="center">
                       <Tooltip title="Edit item">
@@ -193,7 +202,10 @@ const SelectedItems = () => {
                         <IconButton
                           color="error"
                           size="small"
-                          onClick={() => handleRemoveItem(item.uniqueId)}
+                          onClick={() => {
+                            handleRemoveItem(item.uniqueId);
+                            showSnackbar('Item removed successfully!', 'info');
+                          }}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -207,12 +219,7 @@ const SelectedItems = () => {
         </Table>
       </TableContainer>
 
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ m: 0, p: 2, backgroundColor: '#f5f5f5' }}>
           Edit Item: {editItem?.name}
           <IconButton
@@ -220,7 +227,7 @@ const SelectedItems = () => {
             sx={{
               position: 'absolute',
               right: 8,
-              top: 8
+              top: 8,
             }}
           >
             <CloseIcon />
@@ -235,7 +242,7 @@ const SelectedItems = () => {
                 value={editRate}
                 onChange={(e) => setEditRate(e.target.value)}
                 error={!isValidRate(editRate)}
-                helperText={!isValidRate(editRate) && "Please enter a valid rate"}
+                helperText={!isValidRate(editRate) && 'Please enter a valid rate'}
                 type="number"
               />
             </Grid>
@@ -244,58 +251,24 @@ const SelectedItems = () => {
                 Measurements
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Item Size"
-                fullWidth
-                type="number"
-                value={editMeasurements.item}
-                onChange={handleMeasurementChange('item')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Sleeve"
-                fullWidth
-                type="number"
-                value={editMeasurements.sleeve}
-                onChange={handleMeasurementChange('sleeve')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Waist"
-                fullWidth
-                type="number"
-                value={editMeasurements.waist}
-                onChange={handleMeasurementChange('waist')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Length"
-                fullWidth
-                type="number"
-                value={editMeasurements.length}
-                onChange={handleMeasurementChange('length')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Pant Size"
-                fullWidth
-                type="number"
-                value={editMeasurements.pantsize}
-                onChange={handleMeasurementChange('pantsize')}
-              />
-            </Grid>
+            {['item', 'sleeve', 'waist', 'length', 'pantsize'].map((field) => (
+              <Grid item xs={12} sm={6} key={field}>
+                <TextField
+                  label={field.charAt(0).toUpperCase() + field.slice(1)}
+                  fullWidth
+                  type="number"
+                  value={editMeasurements[field]}
+                  onChange={handleMeasurementChange(field)}
+                />
+              </Grid>
+            ))}
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={handleCloseDialog} color="inherit">
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSaveEdit}
             variant="contained"
             disabled={!isValidRate(editRate)}

@@ -1,78 +1,109 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+// context/AccountsContext.js
+import React, { createContext, useContext, useState, useCallback } from "react";
 import axios from "axios";
 
-// Create the context
 const AccountsContext = createContext();
 
-// Provider component for accounts
 export const AccountsProvider = ({ children }) => {
-  // Initialize accounts as an empty array to avoid "not iterable" errors
   const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Fetch accounts from the API
-  const fetchAccounts = async () => {
+  // Memoize fetchAccounts to prevent unnecessary re-renders
+  const fetchAccounts = useCallback(async (force = false) => {
+    // Skip fetching if already initialized and not forced
+    if (initialized && !force) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.get("/api/accounts");
-      setAccounts(response.data); // Update accounts state with fetched data
+      setAccounts(response.data.data);
+      setInitialized(true);
     } catch (error) {
-      console.error("Error fetching accounts:", error);
+      setError(error.response?.data?.error || "Failed to fetch accounts");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [initialized]);
 
-  // Fetch accounts on component mount
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  // Add a new account and update the context
   const addAccount = async (account) => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.post("/api/accounts", account);
-      setAccounts((prev) => [...prev, response.data]); // Append new account to the existing accounts list
+      setAccounts((prev) => [...prev, response.data.data]);
+      return { success: true, data: response.data.data };
     } catch (error) {
-      console.error("Error adding account:", error);
+      const errorMessage = error.response?.data?.error || "Failed to add account";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Update an existing account
   const updateAccount = async (accountId, updatedAccount) => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.put(`/api/accounts/${accountId}`, updatedAccount);
       setAccounts((prev) =>
         prev.map((account) =>
-          account._id === accountId ? response.data : account
+          account._id === accountId ? response.data.data : account
         )
       );
+      return { success: true, data: response.data.data };
     } catch (error) {
-      console.error("Error updating account:", error);
+      const errorMessage = error.response?.data?.error || "Failed to update account";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Delete an account
   const deleteAccount = async (accountId) => {
+    setLoading(true);
+    setError(null);
     try {
       await axios.delete(`/api/accounts/${accountId}`);
-      setAccounts((prev) => prev.filter((account) => account._id !== accountId)); // Remove the deleted account from the list
+      setAccounts((prev) => prev.filter((account) => account._id !== accountId));
+      return { success: true };
     } catch (error) {
-      console.error("Error deleting account:", error);
+      const errorMessage = error.response?.data?.error || "Failed to delete account";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Provide context values
+  const value = {
+    accounts,
+    loading,
+    error,
+    initialized,
+    fetchAccounts,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+  };
+
   return (
-    <AccountsContext.Provider
-      value={{
-        accounts,
-        fetchAccounts,
-        addAccount,
-        updateAccount,
-        deleteAccount,
-      }}
-    >
+    <AccountsContext.Provider value={value}>
       {children}
     </AccountsContext.Provider>
   );
 };
 
-// Custom hook to use the AccountsContext
-export const useAccounts = () => useContext(AccountsContext);
+export const useAccounts = () => {
+  const context = useContext(AccountsContext);
+  if (!context) {
+    throw new Error("useAccounts must be used within an AccountsProvider");
+  }
+  return context;
+};

@@ -57,6 +57,39 @@ export const saveInvoice = async (invoiceData) => {
   }
 };
 
+ // Update invoice with new payment information
+// export const updateInvoicePayments = async (invoiceId) => {
+//   try {
+//     const invoice = await Invoice.findById(invoiceId).populate('receipts');
+    
+//     // Calculate total paid amount from all receipts
+//     const totalPaidAmount = invoice.receipts.reduce(
+//       (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+//       0
+//     );
+
+//     // Update invoice with new payment information
+//     const updatedInvoice = await Invoice.findByIdAndUpdate(
+//       invoiceId,
+//       {
+//         paidAmount: totalPaidAmount,
+//         balanceAmount: invoice.totalAmount - totalPaidAmount,
+//         paymentStatus: totalPaidAmount >= invoice.totalAmount 
+//           ? "completed" 
+//           : totalPaidAmount > 0 
+//             ? "partial" 
+//             : "pending"
+//       },
+//       { new: true }
+//     );
+
+//     return updatedInvoice;
+//   } catch (error) {
+//     console.error("Error updating invoice payments:", error);
+//     throw error;
+//   }
+// };
+
 // Add this to fetch existing invoices if needed
 export const getInvoices = async () => {
   try {

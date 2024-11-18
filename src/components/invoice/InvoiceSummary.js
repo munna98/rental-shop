@@ -1,8 +1,9 @@
-// src/components/invoice/ReceiptDetails
-import React from 'react';
+// src/components/invoice/invoiceSummary
+import React, { useMemo } from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { generateWhatsAppLink } from '@/services/whatsapp';
 import { useInvoice, ACTIONS } from '@/context/InvoiceContext';
+import { useSnackbar } from '@/hooks/useSnackbar';
 
 const InvoiceSummary = () => {
   const theme = useTheme();
@@ -19,105 +20,108 @@ const InvoiceSummary = () => {
     saveInvoiceWithReceipts,
   } = useInvoice();
 
+  const { showSnackbar, SnackbarComponent } = useSnackbar();
+
   const customerDetails = selectedCustomer;
 
-    // Calculate paidAmount and balanceAmount
-    const paidAmount = receipts.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0);
-    const balanceAmount = totalAmount - paidAmount;
-  
-    const handleSave = async () => {
-      if (!selectedCustomer) {
-        alert("Please select a customer to proceed.");
-        return null;
-      }
-    
-      try {
-        const invoiceData = {
-          invoiceNumber,
-          customer: selectedCustomer,
-          items: selectedItems.map(item => ({
-            ...item,
-            measurement: item.measurement || [
-              { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
-            ],
-          })),
-          totalAmount,
-          deliveryDate,
-          weddingDate,
-        };
-    
-        const result = await saveInvoiceWithReceipts(invoiceData, receipts);
-        
-        if (result.success) {
-          dispatch({ 
-            type: ACTIONS.UPDATE_INVOICE_STATUS,   
-            payload: result.invoice 
-          });
-          dispatch({ type: ACTIONS.RESET_RECEIPTS });
-          await refreshInvoiceNumber();
-          alert('Invoice and receipts saved successfully!');
-          return result;
-        }
-        return null;
-      } catch (error) {
-        console.error('Error saving invoice:', error);
-        alert(
-          error.message.includes('Critical error') 
-            ? 'A critical error occurred. Please contact support.'
-            : 'Failed to save invoice. Please try again.'
-        );
-        return null;
-      }
-    };
+  // Memoize calculations for performance optimization
+  const paidAmount = useMemo(
+    () => receipts.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0),
+    [receipts]
+  );
+  const balanceAmount = useMemo(() => totalAmount - paidAmount, [totalAmount, paidAmount]);
 
-    const handleSaveAndSendWhatsApp = async () => {
-      if (!customerDetails) {
-        alert("Please select a customer to proceed.");
-        return;
-      }
-    
-      try {
-        // First save the invoice and get the result
-        const saveResult = await handleSave();
-        
-        // Only proceed if save was successful
-        if (!saveResult?.success) {
-          throw new Error('Failed to save invoice and receipts');
-        }
-    
-        // Then generate and open WhatsApp link
-        const formattedItems = selectedItems.map(item => ({
-          name: item.name,
+  // Format date to improve code readability
+  const formatDate = (date) => new Date(date).toLocaleDateString();
+
+  const handleSave = async () => {
+    if (!selectedCustomer) {
+      showSnackbar("Please select a customer to proceed.", "warning");
+      return null;
+    }
+
+    try {
+      const invoiceData = {
+        invoiceNumber,
+        customer: selectedCustomer,
+        items: selectedItems.map(item => ({
+          ...item,
           measurement: item.measurement || [
-            {
-              item: '',
-              sleeve: '',
-              waist: '',
-              length: '',
-              pantsize: '',
-            }
+            { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
           ],
-          rentRate: item.rentRate
-        }));
-    
-        const whatsappMessage = generateWhatsAppLink({
-          invoiceNumber,
-          customerName: customerDetails.name,
-          customer: customerDetails.mobile,
-          items: formattedItems,
-          totalAmount,
-          paidAmount: saveResult.invoice.paidAmount,   
-          balanceAmount: totalAmount - saveResult.invoice.paidAmount,
-          deliveryDate,
-          weddingDate
+          status: item.status || "Rented",
+          deliveryStatus: item.deliveryStatus || "Pending",
+        })),
+        totalAmount,
+        deliveryDate,
+        weddingDate,
+      };
+
+      const result = await saveInvoiceWithReceipts(invoiceData, receipts);
+
+      if (result.success) {
+        dispatch({ 
+          type: ACTIONS.UPDATE_INVOICE_STATUS,   
+          payload: result.invoice 
         });
-    
-        window.open(whatsappMessage, '_blank');
-      } catch (error) {
-        console.error('Error in save and send:', error);
-        alert('Failed to complete the operation. Please try again.');
+        dispatch({ type: ACTIONS.RESET_RECEIPTS });
+        await refreshInvoiceNumber();
+        showSnackbar('Invoice and receipts saved successfully!', "success");
+        return result;
       }
-    };
+      return null;
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      showSnackbar(
+        error.message.includes('Critical error') 
+          ? 'A critical error occurred. Please contact support.'
+          : 'Failed to save invoice. Please try again.',
+        "error"
+      );
+      return null;
+    }
+  };
+
+  const handleSaveAndSendWhatsApp = async () => {
+    if (!customerDetails) {
+      showSnackbar("Please select a customer to proceed.", "warning");
+      return;
+    }
+
+    try {
+      const saveResult = await handleSave();
+
+      if (!saveResult?.success) {
+        throw new Error('Failed to save invoice and receipts');
+      }
+
+      const formattedItems = selectedItems.map(item => ({
+        name: item.name,
+        measurement: item.measurement || [
+          { item: '', sleeve: '', waist: '', length: '', pantsize: '' },
+        ],
+        rentRate: item.rentRate,
+      }));
+
+      const whatsappMessage = generateWhatsAppLink({
+        invoiceNumber,
+        customerName: customerDetails.name,
+        customer: customerDetails.mobile,
+        items: formattedItems,
+        totalAmount,
+        paidAmount: saveResult.invoice.paidAmount,
+        balanceAmount: totalAmount - saveResult.invoice.paidAmount,
+        deliveryDate,
+        weddingDate,
+      });
+
+      window.open(whatsappMessage, '_blank');
+    } catch (error) {
+      console.error('Error in save and send:', error);
+      showSnackbar('Failed to complete the operation. Please try again.', "error");
+    }
+  };
+
 
   return (
     <Box
@@ -152,13 +156,13 @@ const InvoiceSummary = () => {
 
         {deliveryDate && (
           <Typography variant="body1" gutterBottom>
-            Delivery Date: {new Date(deliveryDate).toLocaleDateString()}
+            Delivery Date: {formatDate(deliveryDate)}
           </Typography>
         )}
 
         {weddingDate && (
           <Typography variant="body1" gutterBottom>
-            Wedding Date: {new Date(weddingDate).toLocaleDateString()}
+            Wedding Date: {formatDate(weddingDate)}
           </Typography>
         )}
 
@@ -185,13 +189,7 @@ const InvoiceSummary = () => {
           color="primary"
           onClick={handleSave}
           fullWidth
-          disabled={!customerDetails}
-          sx={{
-            backgroundColor: '#CE5A67',
-            '&:hover': {
-              backgroundColor: '#b44851',
-            },
-          }}
+          disabled={!customerDetails || totalAmount <= 0 || selectedItems.length === 0}
         >
           Save Invoice
         </Button>
@@ -200,17 +198,14 @@ const InvoiceSummary = () => {
           color="primary"
           onClick={handleSaveAndSendWhatsApp}
           fullWidth
-          disabled={!customerDetails}
-          sx={{
-            backgroundColor: '#CE5A67',
-            '&:hover': {
-              backgroundColor: '#b44851',
-            },
-          }}
+          disabled={!customerDetails || totalAmount <= 0 || selectedItems.length === 0}
         >
           Save & Send WhatsApp
         </Button>
       </Box>
+
+      {/* Snackbar component */}
+      <SnackbarComponent />
     </Box>
   );
 };

@@ -29,7 +29,7 @@ const SubItemSchema = new mongoose.Schema({
     type: String,
     enum: ['Available', 'Rented', 'Damaged', 'Maintanance'],
     default: 'Available'
-  }
+  },
 });
 
 export default mongoose.models.SubItem || mongoose.model('SubItem', SubItemSchema);
