@@ -9,8 +9,7 @@ const transactionSchema = new mongoose.Schema({
   entityId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    // Using refPath to dynamically reference either Customer or Account
-    refPath: 'entityType'
+    refPath: 'entityType',
   },
   relatedInvoice: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -50,9 +49,7 @@ const transactionSchema = new mongoose.Schema({
     enum: ['receipt', 'invoicing', 'payment'],
     required: true,
   }
-});
+}, { timestamps: true }); 
 
-// Update the model name mappings for refPath
-transactionSchema.path('entityType').enum(['customer', 'account']);
 
 export default mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);

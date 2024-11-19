@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -21,12 +21,18 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useReceipt } from "@/context/ReceiptContext";
-import { useAccounts } from "@/context/AccountsContext";
 
 const ReceiptPage = () => {
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const { customers, receipts, loading: receiptLoading, error, addReceipt, submitReceipts } = useReceipt();
-  const { accounts, loading: accountsLoading } = useAccounts();
+  const { 
+    customers, 
+    accounts,
+    receipts, 
+    loading, 
+    error, 
+    addReceipt, 
+    submitReceipts 
+  } = useReceipt();
 
   // Local form state
   const [amount, setAmount] = useState("");
@@ -38,6 +44,16 @@ const ReceiptPage = () => {
   const [receiptDate, setReceiptDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+
+  // Group receipts by entity
+  const groupedReceipts = receipts.reduce((groups, receipt) => {
+    const key = `${receipt.entityType}-${receipt.entityId}`;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(receipt);
+    return groups;
+  }, {});
 
   // Combine customers and accounts into a single array with type identification
   const entities = [
@@ -165,30 +181,41 @@ const ReceiptPage = () => {
   };
 
   const handleSubmitReceipts = async () => {
-    if (!selectedEntity) {
-      showSnackbar("Please select a customer or account", "error");
-      return;
-    }
-
     if (receipts.length === 0) {
       showSnackbar("Please add at least one receipt", "error");
       return;
     }
-
-    const result = await submitReceipts(selectedEntity._id, selectedEntity.entityType);
-    
-    if (result.success) {
-      showSnackbar("Receipts submitted successfully", "success");
-      resetForm();
-    } else {
-      showSnackbar(result.error, "error");
+  
+    let hasError = false;
+    for (const [key, groupReceipts] of Object.entries(groupedReceipts)) {
+      const entityId = groupReceipts[0].entityId;
+      const entityType = groupReceipts[0].entityType;
+      
+      const result = await submitReceipts(entityId, entityType);
+      
+      if (!result.success) {
+        hasError = true;
+        showSnackbar(`Error submitting receipts for ${groupReceipts[0].entityName}: ${result.error}`, "error");
+      }
+    }
+  
+    if (!hasError) {
+      showSnackbar("All receipts submitted successfully", "success");
     }
   };
-
-  if (receiptLoading || accountsLoading) {
+  
+  if (loading) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">{error}</Typography>
       </Box>
     );
   }
@@ -275,64 +302,83 @@ const ReceiptPage = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Receipts List
+              Pending Receipts
             </Typography>
-
-            {receipts.length > 0 ? (
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Method</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {receipts.map((receipt, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{receipt.entityName}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={receipt.entityType === 'customer' ? 'Customer' : `Account (${receipt.entityDetails?.type})`}
-                            size="small"
-                            color={receipt.entityType === 'customer' ? 'primary' : 'secondary'}
-                          />
-                        </TableCell>
-                        <TableCell>{receipt.date}</TableCell>
-                        <TableCell>₹{receipt.amount}</TableCell>
-                        <TableCell>
-                          {receipt.method.replace("_", " ").toUpperCase()}
-                        </TableCell>
+            
+            {Object.entries(groupedReceipts).map(([key, groupReceipts]) => (
+              <Box key={key} sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="subtitle1" sx={{ flexGrow: 1 }}>
+                    {groupReceipts[0].entityName}
+                  </Typography>
+                  <Chip 
+                    label={groupReceipts[0].entityType === 'customer' ? 'Customer' : 'Account'}
+                    color={groupReceipts[0].entityType === 'customer' ? 'primary' : 'secondary'}
+                    size="small"
+                  />
+                </Box>
+                
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Date</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                        <TableCell>Method</TableCell>
+                        <TableCell>Note</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography color="textSecondary" align="center">
-                No receipts added yet
-              </Typography>
-            )}
+                    </TableHead>
+                    <TableBody>
+                      {groupReceipts.map((receipt, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{receipt.date}</TableCell>
+                          <TableCell align="right">
+                            {receipt.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {receipt.method.charAt(0).toUpperCase() + 
+                             receipt.method.slice(1).replace('_', ' ')}
+                          </TableCell>
+                          <TableCell>{receipt.note}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={1}><strong>Total</strong></TableCell>
+                        <TableCell align="right">
+                          <strong>
+                            {groupReceipts
+                              .reduce((sum, receipt) => sum + receipt.amount, 0)
+                              .toFixed(2)}
+                          </strong>
+                        </TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            ))}
 
             {receipts.length > 0 && (
               <Button
                 variant="contained"
-                color="secondary"
+                color="primary"
                 onClick={handleSubmitReceipts}
-                disabled={!selectedEntity}
                 fullWidth
-                sx={{ mt: 2 }}
               >
                 Submit All Receipts
               </Button>
             )}
+
+            {receipts.length === 0 && (
+              <Typography color="text.secondary" align="center">
+                No pending receipts
+              </Typography>
+            )}
           </Paper>
         </Grid>
       </Grid>
-
+      
       <SnackbarComponent />
     </Box>
   );

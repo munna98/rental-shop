@@ -16,6 +16,15 @@ export const fetchItems = async () => {
   return response.json();
 };
 
+export const fetchAccounts = async () => {
+  const response = await fetch("/api/accounts"); // Replace with your actual API endpoint
+  if (!response.ok) {
+    throw new Error("Failed to fetch accounts");
+  }
+  return response.json();
+};
+
+
 // *************INVOICE*****************
 
 export const fetchLastInvoiceNumber = async () => {
