@@ -20,7 +20,7 @@ import { useSnackbar } from "@/hooks/useSnackbar";
 import axios from 'axios';
 import EditMasterItemForm from "../forms/EditMasterItemForm";
 
-const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
+const MasterItems = ({ items, selectedMaster, setSelectedMaster }) => {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
@@ -101,8 +101,8 @@ const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {masterItems.map((item) => (
-              <TableRow key={item._id}>
+          {items.map((item) => (
+            <TableRow key={item._id}>
                 <TableCell>
                   <Avatar alt={item.name} src={item.image} sx={{ width: 56, height: 56 }} />
                 </TableCell>
@@ -136,9 +136,10 @@ const MasterItems = ({ selectedMaster, setSelectedMaster }) => {
                     Add 
                   </Button>
                 </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+                </TableRow>
+          ))}
+        </TableBody>
+
         </Table>
       </TableContainer>
 

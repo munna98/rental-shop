@@ -196,6 +196,38 @@ export const deleteInvoice = async (id) => {
 // src/services/api.js
 // src/services/api.js
 
+// export const createTransactions = async (data) => {
+//   try {
+//     const response = await fetch('/api/transactions', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({
+//         entityId: data.entityId,
+//         entityType: data.entityType,
+//         invoice: data.invoiceNumber,
+//         transactions: data.transactions.map(item => ({
+//           type: data.type,
+//           amount: item.amount,
+//           date: item.date,
+//           method: item.method,
+//           note: item.note,
+//           source: data.sourcePage || 'invoicing'
+//         }))
+//       })
+//     });
+
+//     if (!response.ok) {
+//       const error = await response.json();
+//       throw new Error(error.message);
+//     }
+
+//     return response.json();
+//   } catch (error) {
+//     console.error(`Error creating transactions:`, error);
+//     throw error;
+//   }
+// };
+
 export const createReceipts = async (receiptData) => {
   try {
     // Format the receipt data before sending
@@ -238,6 +270,51 @@ export const createReceipts = async (receiptData) => {
     return result;
   } catch (error) {
     console.error('Error creating receipts:', error);
+    throw error;
+  }
+};
+export const createPayments = async (paymentData) => {
+  try {
+    // Format the payment data before sending
+    const formattedData = {
+      ...paymentData,
+      receipts: paymentData.payments.map(payment => ({
+        amount: parseFloat(payment.amount),
+        date: payment.date,
+        method: payment.method,
+        note: payment.note,
+        customer: payment.customer,
+        invoiceNumber: paymentData.invoiceNumber,
+        transactionType: paymentData.transactionType || 'payment',
+        sourcePage: paymentData.sourcePage || 'invoicing'
+      }))
+    };
+    
+    // Make the API call
+    const response = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedData),
+    });
+
+    // Log for debugging
+    console.log('Sending payment data:', formattedData);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create payments');
+    }
+
+    const result = await response.json();
+    
+    // Log successful response
+    console.log('Payment creation response:', result);
+
+    return result;
+  } catch (error) {
+    console.error('Error creating payments:', error);
     throw error;
   }
 };

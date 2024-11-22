@@ -9,6 +9,7 @@ import { LedgerProvider } from "@/context/LedgerContext";
 import { AccountsProvider } from "@/context/AccountsContext";
 import { ReceiptProvider } from "@/context/ReceiptContext";
 import { RentalsProvider } from "@/context/RentalsContext";
+import { PaymentProvider } from "@/context/PaymentContext";
 
 function MyApp({ Component, pageProps }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -39,14 +40,16 @@ function MyApp({ Component, pageProps }) {
           <RentalsProvider>
             <LedgerProvider>
               <ReceiptProvider>
-                <AccountsProvider>
-                  <DashboardLayout
-                    toggleTheme={toggleTheme}
-                    isDarkMode={isDarkMode}
-                  >
-                    <Component {...pageProps} />
-                  </DashboardLayout>
-                </AccountsProvider>
+                <PaymentProvider>
+                  <AccountsProvider>
+                    <DashboardLayout
+                      toggleTheme={toggleTheme}
+                      isDarkMode={isDarkMode}
+                    >
+                      <Component {...pageProps} />
+                    </DashboardLayout>
+                  </AccountsProvider>
+                </PaymentProvider>
               </ReceiptProvider>
             </LedgerProvider>
           </RentalsProvider>

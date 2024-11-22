@@ -4,7 +4,7 @@ import {
   fetchItems,
   fetchLastInvoiceNumber,
   fetchInvoiceByNumber,
-  createReceipts,
+  createTransactions,
   saveInvoice,
 } from "@/services/api";
 
@@ -194,14 +194,15 @@ export const InvoiceProvider = ({ children }) => {
           transactionType: "receipt",
           sourcePage: "invoicing",
         })),
-        customerId: invoiceData.customer._id,
+        entityId: invoiceData.customer._id,
+        entityType: "customer",
         invoiceNumber: invoiceData.invoiceNumber,
         transactionType: "receipt",
         sourcePage: "invoicing",
       };
   
       // Save the transactions first
-      const transactionResult = await createReceipts(receiptData);
+      const transactionResult = await createTransactions(receiptData);
   
       if (!transactionResult?.transactions) {
         throw new Error('Failed to create receipts');

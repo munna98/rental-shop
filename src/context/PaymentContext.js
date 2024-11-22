@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { fetchCustomers, fetchAccounts, createReceipts  } from '@/services/api';
+import { fetchCustomers, fetchAccounts, createPayments } from '@/services/api';
 
 export const ACTIONS = {
   SET_CUSTOMERS: 'SET_CUSTOMERS',
   SET_ACCOUNTS: 'SET_ACCOUNTS',
-  SET_RECEIPTS: 'SET_RECEIPTS',
-  ADD_RECEIPT: 'ADD_RECEIPT',
-  REMOVE_RECEIPTS_BY_ENTITY: 'REMOVE_RECEIPTS_BY_ENTITY',
-  RESET_RECEIPTS: 'RESET_RECEIPTS',
+  SET_PAYMENTS: 'SET_PAYMENTS',
+  ADD_PAYMENT: 'ADD_PAYMENT',
+  REMOVE_PAYMENTS_BY_ENTITY: 'REMOVE_PAYMENTS_BY_ENTITY',
+  RESET_PAYMENTS: 'RESET_PAYMENTS',
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
   SET_SUBMITTING: 'SET_SUBMITTING'
@@ -16,32 +16,32 @@ export const ACTIONS = {
 const initialState = {
   customers: [],
   accounts: [],
-  receipts: [],
+  payments: [],
   loading: false,
   submitting: false,
   error: null,
 };
 
-function receiptReducer(state, action) {
+function paymentReducer(state, action) {
   switch (action.type) {
     case ACTIONS.SET_CUSTOMERS:
       return { ...state, customers: action.payload };
     case ACTIONS.SET_ACCOUNTS:
       return { ...state, accounts: action.payload.data };
-    case ACTIONS.SET_RECEIPTS:
-      return { ...state, receipts: action.payload };
-    case ACTIONS.ADD_RECEIPT:
-      return { ...state, receipts: [...state.receipts, action.payload] };
-    case ACTIONS.REMOVE_RECEIPTS_BY_ENTITY:
+    case ACTIONS.SET_PAYMENTS:
+      return { ...state, payments: action.payload };
+    case ACTIONS.ADD_PAYMENT:
+      return { ...state, payments: [...state.payments, action.payload] };
+    case ACTIONS.REMOVE_PAYMENTS_BY_ENTITY:
       return {
         ...state,
-        receipts: state.receipts.filter(
-          receipt => !(receipt.entityId === action.payload.entityId && 
-                      receipt.entityType === action.payload.entityType)
+        payments: state.payments.filter(
+          payment => !(payment.entityId === action.payload.entityId && 
+                      payment.entityType === action.payload.entityType)
         )
       };
-    case ACTIONS.RESET_RECEIPTS:
-      return { ...state, receipts: [] };
+    case ACTIONS.RESET_PAYMENTS:
+      return { ...state, payments: [] };
     case ACTIONS.SET_LOADING:
       return { ...state, loading: action.payload };
     case ACTIONS.SET_SUBMITTING:
@@ -53,13 +53,13 @@ function receiptReducer(state, action) {
   }
 }
 
-const ReceiptContext = createContext();
+const PaymentContext = createContext();
 
-export function ReceiptProvider({ children }) {
-  const [state, dispatch] = useReducer(receiptReducer, initialState);
+export function PaymentProvider({ children }) {
+  const [state, dispatch] = useReducer(paymentReducer, initialState);
 
   useEffect(() => {
-    // In ReceiptProvider.jsx, modify the loadData function:
+    // In PaymentProvider.jsx, modify the loadData function:
 const loadData = async () => {
   dispatch({ type: ACTIONS.SET_LOADING, payload: true });
   try {
@@ -85,8 +85,8 @@ const loadData = async () => {
     loadData();
   }, []);
 
-  const addReceipt = (receipt) => {
-    if (!receipt.entityId || !receipt.entityType) {
+  const addPayment = (payment) => {
+    if (!payment.entityId || !payment.entityType) {
       return { 
         success: false, 
         error: "Please select a customer or account" 
@@ -94,17 +94,17 @@ const loadData = async () => {
     }
 
     try {
-      dispatch({ type: ACTIONS.ADD_RECEIPT, payload: receipt });
+      dispatch({ type: ACTIONS.ADD_PAYMENT, payload: payment });
       return { success: true };
     } catch (error) {
       return { 
         success: false, 
-        error: "Failed to add receipt" 
+        error: "Failed to add payment" 
       };
     }
   };
 
-  const submitReceipts = async (entityId, entityType) => {
+  const submitPayments = async (entityId, entityType) => {
     if (state.submitting) {
       return { 
         success: false, 
@@ -112,36 +112,36 @@ const loadData = async () => {
       };
     }
 
-    const entityReceipts = state.receipts.filter(
-      receipt => receipt.entityId === entityId && receipt.entityType === entityType
+    const entityPayments = state.payments.filter(
+      payment => payment.entityId === entityId && payment.entityType === entityType
     );
 
-    if (entityReceipts.length === 0) {
+    if (entityPayments.length === 0) {
       return { 
         success: false, 
-        error: "No receipts found for this entity" 
+        error: "No payments found for this entity" 
       };
     }
 
     dispatch({ type: ACTIONS.SET_SUBMITTING, payload: true });
 
     try {
-      const receiptData = {
+      const paymentData = {
         entityId,
         entityType,
-        transactionType: "receipt",
-        receipts: entityReceipts.map(receipt => ({
-          amount: receipt.amount,
-          method: receipt.method,
-          date: receipt.date,
-          note: receipt.note || ''
+        transactionType: "payment",
+        payments: entityPayments.map(payment => ({
+          amount: payment.amount,
+          method: payment.method,
+          date: payment.date,
+          note: payment.note || ''
         }))
       };
 
-      const response = await createReceipts (receiptData);
+      const response = await createPayments(paymentData);
 
       dispatch({ 
-        type: ACTIONS.REMOVE_RECEIPTS_BY_ENTITY, 
+        type: ACTIONS.REMOVE_PAYMENTS_BY_ENTITY, 
         payload: { entityId, entityType } 
       });
 
@@ -150,7 +150,7 @@ const loadData = async () => {
       if (response.status === 207) {
         return {
           success: true,
-          warning: "Some receipts could not be processed",
+          warning: "Some payments could not be processed",
           errors: response.errors
         };
       }
@@ -162,7 +162,7 @@ const loadData = async () => {
       dispatch({ type: ACTIONS.SET_SUBMITTING, payload: false });
       return { 
         success: false, 
-        error: error.message || "Failed to submit receipts" 
+        error: error.message || "Failed to submit payments" 
       };
     }
   };
@@ -170,26 +170,26 @@ const loadData = async () => {
   const value = {
     customers: state.customers,
     accounts: state.accounts,
-    receipts: state.receipts,
+    payments: state.payments,
     loading: state.loading,
     submitting: state.submitting,
     error: state.error,
-    addReceipt,
-    submitReceipts,
+    addPayment,
+    submitPayments,
     dispatch,
   };
 
   return (
-    <ReceiptContext.Provider value={value}>
+    <PaymentContext.Provider value={value}>
       {children}
-    </ReceiptContext.Provider>
+    </PaymentContext.Provider>
   );
 }
 
-export function useReceipt() {
-  const context = useContext(ReceiptContext);
+export function usePayment() {
+  const context = useContext(PaymentContext);
   if (!context) {
-    throw new Error('useReceipt must be used within a ReceiptProvider');
+    throw new Error('usePayment must be used within a PaymentProvider');
   }
   return context;
 }

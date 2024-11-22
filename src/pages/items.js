@@ -19,24 +19,8 @@ import SubItems from "@/components/items/SubItems";
 import { useItems } from "@/context/ItemsContext";
 import { useSnackbar } from "@/hooks/useSnackbar"; // New custom hook
 import axios from "axios";
+import { useSearchIitems } from "@/hooks/useSearchItems";
 
-// Custom hook for search functionality
-const useSearch = (masterItems, subItems) => {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredItems = {
-    master: masterItems.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-    sub: subItems.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.code.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  };
-
-  return { searchQuery, setSearchQuery, filteredItems };
-};
 
 const ItemsPage = () => {
   const { 
@@ -49,8 +33,11 @@ const ItemsPage = () => {
   } = useItems();
 
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const { searchQuery, setSearchQuery, filteredItems } = useSearch(masterItems, subItems);
-  
+  const { searchQuery, setSearchQuery, filteredItems } = useSearchIitems(
+    masterItems,
+    subItems,
+    itemType
+  );
   const [open, setOpen] = useState(false);
   const [openSubItem, setOpenSubItem] = useState(false);
   const [selectedMaster, setSelectedMaster] = useState("");
@@ -86,7 +73,7 @@ const ItemsPage = () => {
   };
 
   return (
-    <Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
+<Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <Typography variant="h4" gutterBottom>Items</Typography>
 
@@ -106,33 +93,29 @@ const ItemsPage = () => {
 
           <TextField
             variant="outlined"
-            placeholder="Search items..."
+            placeholder={`Search ${itemType.toLowerCase()}...`}
             value={searchQuery}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon className="h-5 w-5" />
+                  <SearchIcon />
                 </InputAdornment>
               ),
             }}
             sx={{ marginBottom: 2, width: "100%", maxWidth: 300 }}
           />
-
-          <StyledButton variant="icon" onClick={handleAddMasterItemOpen}>
-            <AddIcon className="h-5 w-5" />
-          </StyledButton>
         </Box>
       </Box>
 
       {itemType === "Master Items" ? (
         <MasterItems 
-          items={filteredItems.master}
+          items={filteredItems}
           selectedMaster={selectedMaster}
           setSelectedMaster={setSelectedMaster}
         />
       ) : (
-        <SubItems items={filteredItems.sub} />
+        <SubItems items={filteredItems} />
       )}
 
       <AddMasterItemForm 

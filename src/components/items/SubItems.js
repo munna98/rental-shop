@@ -1,25 +1,12 @@
-import React, { useState, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Avatar,
-  Button,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import StatusChip from "@/components/StatusChip";
+import React, { useState, useMemo } from "react"; 
 import { useConfirmation } from "@/hooks/useConfirmation";
 import EditSubItemForm from "../forms/EditSubItemForm";
 import axios from "axios";
 import { useItems } from "@/context/ItemsContext";
 import { useSnackbar } from "@/hooks/useSnackbar";
+import SubItemTable from "./tables/subItemTable";
 
-const SubItems = () => {
+const SubItems = ({ items }) => {
   const [openEdit, setOpenEdit] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const { subItems, masterItems, fetchSubItems } = useItems();
@@ -65,66 +52,11 @@ const SubItems = () => {
 
   return (
     <>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>Image</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Item Name</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Code</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Master Item</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Rent Rate</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Description</TableCell>
-              <TableCell align="center" sx={{ fontWeight: "bold" }}>
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {subItems.map((item) => {
-              return (
-                <TableRow key={item._id}>
-                  <TableCell>
-                    <Avatar
-                      alt={item.name}
-                      src={item.image}
-                      sx={{ width: 56, height: 56 }}
-                    />
-                  </TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.code}</TableCell>
-                  <TableCell>{item.master?.name || 'Unknown'}</TableCell>
-                  <TableCell>{`₹${item.rentRate}`}</TableCell>
-                  <TableCell>
-                    <StatusChip status={item.status} />
-                  </TableCell>
-                  <TableCell>{item.description}</TableCell>
-                  <TableCell align="center">
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      startIcon={<EditIcon />}
-                      sx={{ marginRight: 1 }}
-                      onClick={() => handleEditOpen(item)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(item._id, item.name)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <SubItemTable
+        items={items}
+        onEdit={handleEditOpen}
+        onDelete={handleDelete}
+      />
 
       <EditSubItemForm
         open={openEdit} 
