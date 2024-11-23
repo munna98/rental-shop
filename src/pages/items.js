@@ -8,21 +8,25 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
+  Button,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import AddMasterItemForm from "@/components/forms/AddMasterItemForm";
-import StyledButton from "@/components/buttons/StyledButton";
 import MasterItems from "@/components/items/MasterItems";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import SubItems from "@/components/items/SubItems";
 import { useItems } from "@/context/ItemsContext";
-import { useSnackbar } from "@/hooks/useSnackbar"; // New custom hook
+import { useSnackbar } from "@/hooks/useSnackbar";
 import axios from "axios";
 import { useSearchIitems } from "@/hooks/useSearchItems";
 
-
 const ItemsPage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const { 
     itemType, 
     setItemType, 
@@ -73,12 +77,43 @@ const ItemsPage = () => {
   };
 
   return (
-<Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <Typography variant="h4" gutterBottom>Items</Typography>
+    <Box sx={{ 
+      padding: { xs: 2, sm: 3, md: 4 },
+      maxWidth: 1200, 
+      margin: "0 auto"
+    }}>
+      {/* Header Section */}
+      <Box sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between",
+        alignItems: { xs: "stretch", sm: "center" },
+        gap: 2,
+        marginBottom: 3
+      }}>
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontSize: { xs: '1.5rem', sm: '2rem' },
+            marginBottom: { xs: 2, sm: 0 }
+          }}
+        >
+          Items
+        </Typography>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <FormControl variant="outlined" sx={{ minWidth: 150 }}>
+        {/* Controls Container */}
+        <Box sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
+          width: { xs: "100%", sm: "auto" }
+        }}>
+          <FormControl 
+            variant="outlined" 
+            sx={{ 
+              minWidth: { xs: "100%", sm: 150 }
+            }}
+          >
             <InputLabel id="item-type-label">Item Type</InputLabel>
             <Select
               labelId="item-type-label"
@@ -95,7 +130,7 @@ const ItemsPage = () => {
             variant="outlined"
             placeholder={`Search ${itemType.toLowerCase()}...`}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -103,25 +138,63 @@ const ItemsPage = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ marginBottom: 2, width: "100%", maxWidth: 300 }}
+            sx={{ 
+              width: "100%",
+              maxWidth: { xs: "100%", sm: 300 }
+            }}
           />
         </Box>
       </Box>
 
-      {itemType === "Master Items" ? (
-        <MasterItems 
-          items={filteredItems}
-          selectedMaster={selectedMaster}
-          setSelectedMaster={setSelectedMaster}
-        />
-      ) : (
-        <SubItems items={filteredItems} />
+      {/* Add Master Item Button */}
+      {itemType === "Master Items" && (
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: { xs: "stretch", sm: "flex-end" },
+          marginBottom: 2
+        }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleAddMasterItemOpen}
+            sx={{ 
+              width: { xs: "100%", sm: "auto" }
+            }}
+          >
+            Add Master Item
+          </Button>
+        </Box>
       )}
 
+      {/* Content Section */}
+      <Box sx={{ 
+        overflowX: "auto",
+        "& .MuiTableContainer-root": {
+          maxWidth: "100%"
+        }
+      }}>
+        {itemType === "Master Items" ? (
+          <MasterItems 
+            items={filteredItems}
+            selectedMaster={selectedMaster}
+            setSelectedMaster={setSelectedMaster}
+            isMobile={isMobile}
+          />
+        ) : (
+          <SubItems 
+            items={filteredItems}
+            isMobile={isMobile}
+          />
+        )}
+      </Box>
+
+      {/* Modals */}
       <AddMasterItemForm 
         open={open} 
         handleClose={handleAddMasterItemClose} 
         onAddNewMasterItem={handleAddMasterItem} 
+        fullScreen={isMobile}
       />
 
       <AddSubItemForm
@@ -130,6 +203,7 @@ const ItemsPage = () => {
         masterItems={masterItems}
         selectedMaster={selectedMaster}
         onAdd={handleAddSubItem}
+        fullScreen={isMobile}
       />
 
       <SnackbarComponent />
