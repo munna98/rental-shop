@@ -17,41 +17,20 @@ import {
   useTheme,
   useMediaQuery,
   IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Collapse,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [expandedItemId, setExpandedItemId] = useState(null);
 
-  const handleMoreClick = (event, item) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedItem(item);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedItem(null);
-  };
-
-  const handleMenuAction = (action) => {
-    if (selectedItem) {
-      if (action === "edit") {
-        onEdit(selectedItem);
-      } else if (action === "delete") {
-        onDelete(selectedItem._id, selectedItem.name);
-      }
-    }
-    handleMenuClose();
+  const handleExpandClick = (itemId) => {
+    setExpandedItemId((prev) => (prev === itemId ? null : itemId));
   };
 
   // Desktop view remains unchanged
@@ -125,7 +104,7 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
         <Card
           key={item._id}
           sx={{
-            mb: 2,
+            mb: 1,
             boxShadow:
               theme.palette.mode === "light"
                 ? "0 8px 20px rgba(0, 0, 0, 0.1)"
@@ -144,57 +123,25 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
         >
           <CardContent>
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}
-              >
-                <Avatar
-                  alt={item.name}
-                  src={item.image}
-                  sx={{ width: 56, height: 56 }}
-                />
-                <Box>
-                  <Typography variant="subtitle1" component="div">
-                    {item.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Code: {item.code}
-                  </Typography>
-                </Box>
+              <Avatar
+                alt={item.name}
+                src={item.image}
+                sx={{ width: 56, height: 56, mr: 2 }}
+              />
+              <Box>
+                <Typography variant="subtitle1" component="div">
+                  {item.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Code: {item.code}
+                </Typography>
               </Box>
               <IconButton
-                onClick={(e) => handleMoreClick(e, item)}
-                sx={{ ml: 1 }}
+                onClick={() => handleExpandClick(item._id)}
+                sx={{ ml: "auto" }}
               >
-                <MoreVertIcon />
+                <KeyboardArrowDownIcon />
               </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                // transformOrigin={{ horizontal: "right", vertical: "top" }}
-                // anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-              >
-                <MenuItem onClick={() => handleMenuAction("edit")}>
-                  <ListItemIcon>
-                    <EditIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Edit</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={() => handleMenuAction("delete")}>
-                  <ListItemIcon>
-                    <DeleteIcon fontSize="small" color="error" />
-                  </ListItemIcon>
-                  <ListItemText>Delete</ListItemText>
-                </MenuItem>
-              </Menu>
             </Box>
 
             <Button
@@ -204,9 +151,38 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
               startIcon={<AddIcon />}
               onClick={() => onAddSubItem(item)}
               size="small"
+              // sx={{ mb: 1 }}
             >
               Add Sub Item
             </Button>
+
+            <Collapse in={expandedItemId === item._id} timeout="auto">
+  <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+    <Button
+      fullWidth
+      sx={{ flex: 1 }}
+      variant="outlined"
+      color="primary"
+      startIcon={<EditIcon />}
+      onClick={() => onEdit(item)}
+      size="small"
+    >
+      Edit
+    </Button>
+    <Button
+      fullWidth
+      sx={{ flex: 1 }}
+      variant="outlined"
+      color="error"
+      startIcon={<DeleteIcon />}
+      onClick={() => onDelete(item._id, item.name)}
+      size="small"
+    >
+      Delete
+    </Button>
+  </Box>
+</Collapse>
+
           </CardContent>
         </Card>
       ))}

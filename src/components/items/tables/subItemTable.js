@@ -113,7 +113,7 @@ const SubItemTable = ({ items, onEdit, onDelete }) => {
           }`,
         }}>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar
                   alt={item.name}
