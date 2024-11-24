@@ -1,5 +1,4 @@
-// MasterItemTable.jsx
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -16,17 +15,46 @@ import {
   Box,
   Stack,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  // Desktop view
+  const handleMoreClick = (event, item) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedItem(item);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedItem(null);
+  };
+
+  const handleMenuAction = (action) => {
+    if (selectedItem) {
+      if (action === 'edit') {
+        onEdit(selectedItem);
+      } else if (action === 'delete') {
+        onDelete(selectedItem._id, selectedItem.name);
+      }
+    }
+    handleMenuClose();
+  };
+
+  // Desktop view remains unchanged
   const DesktopView = () => (
     <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
       <Table>
@@ -81,7 +109,7 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
     </TableContainer>
   );
 
-  // Mobile view
+  // Updated Mobile view
   const MobileView = () => (
     <Box sx={{ display: { xs: 'block', md: 'none' } }}>
       {items.map((item) => (
@@ -101,57 +129,72 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
           }`,
         }}>
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Avatar
-                alt={item.name}
-                src={item.image}
-                sx={{ width: 56, height: 56 }}
-              />
-              <Box>
-                <Typography variant="subtitle1" component="div">
-                  {item.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Code: {item.code}
-                </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                <Avatar
+                  alt={item.name}
+                  src={item.image}
+                  sx={{ width: 56, height: 56 }}
+                />
+                <Box>
+                  <Typography variant="subtitle1" component="div">
+                    {item.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Code: {item.code}
+                  </Typography>
+                </Box>
               </Box>
+              <IconButton 
+                onClick={(e) => handleMoreClick(e, item)}
+                sx={{ ml: 1 }}
+              >
+                <MoreVertIcon />
+              </IconButton>
             </Box>
 
-            <Stack spacing={1}>
-              <Button
-                fullWidth
-                variant="outlined"
-                color="primary"
-                startIcon={<EditIcon />}
-                onClick={() => onEdit(item)}
-                size="small"
-              >
-                Edit
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => onDelete(item._id, item.name)}
-                size="small"
-              >
-                Delete
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                color="success"
-                startIcon={<AddIcon />}
-                onClick={() => onAddSubItem(item)}
-                size="small"
-              >
-                Add Sub Item
-              </Button>
-            </Stack>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="success"
+              startIcon={<AddIcon />}
+              onClick={() => onAddSubItem(item)}
+              size="small"
+            >
+              Add Sub Item
+            </Button>
           </CardContent>
         </Card>
       ))}
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            overflow: 'visible',
+            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+            mt: 1.5,
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => handleMenuAction('edit')}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleMenuAction('delete')}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 
