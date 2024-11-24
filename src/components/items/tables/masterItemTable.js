@@ -20,7 +20,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -45,9 +45,9 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
 
   const handleMenuAction = (action) => {
     if (selectedItem) {
-      if (action === 'edit') {
+      if (action === "edit") {
         onEdit(selectedItem);
-      } else if (action === 'delete') {
+      } else if (action === "delete") {
         onDelete(selectedItem._id, selectedItem.name);
       }
     }
@@ -56,21 +56,30 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
 
   // Desktop view remains unchanged
   const DesktopView = () => (
-    <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
+    <TableContainer
+      component={Paper}
+      sx={{ display: { xs: "none", md: "block" } }}
+    >
       <Table>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: "bold" }}>Image</TableCell>
             <TableCell sx={{ fontWeight: "bold" }}>Item Name</TableCell>
             <TableCell sx={{ fontWeight: "bold" }}>Code</TableCell>
-            <TableCell align="center" sx={{ fontWeight: "bold" }}>Actions</TableCell>
+            <TableCell align="center" sx={{ fontWeight: "bold" }}>
+              Actions
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {items.map((item) => (
             <TableRow key={item._id}>
               <TableCell>
-                <Avatar alt={item.name} src={item.image} sx={{ width: 56, height: 56 }} />
+                <Avatar
+                  alt={item.name}
+                  src={item.image}
+                  sx={{ width: 56, height: 56 }}
+                />
               </TableCell>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.code}</TableCell>
@@ -111,26 +120,33 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
 
   // Updated Mobile view
   const MobileView = () => (
-    <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+    <Box sx={{ display: { xs: "block", md: "none" } }}>
       {items.map((item) => (
-        <Card key={item._id} sx={{ 
-          mb: 2,
-          boxShadow: theme.palette.mode === "light" 
-            ? "0 8px 20px rgba(0, 0, 0, 0.1)" 
-            : "0 8px 20px rgba(0, 0, 0, 0.2)",
-          borderRadius: "8px",
-          background: theme.palette.mode === "light"
-            ? "rgba(255, 255, 255, 0.6)"
-            : "rgba(42, 42, 42, 0.6)",
-          border: `1px solid ${
-            theme.palette.mode === "light"
-              ? "rgba(255, 255, 255, 0.2)"
-              : "rgba(255, 255, 255, 0.1)"
-          }`,
-        }}>
+        <Card
+          key={item._id}
+          sx={{
+            mb: 2,
+            boxShadow:
+              theme.palette.mode === "light"
+                ? "0 8px 20px rgba(0, 0, 0, 0.1)"
+                : "0 8px 20px rgba(0, 0, 0, 0.2)",
+            borderRadius: "8px",
+            background:
+              theme.palette.mode === "light"
+                ? "rgba(255, 255, 255, 0.6)"
+                : "rgba(42, 42, 42, 0.6)",
+            border: `1px solid ${
+              theme.palette.mode === "light"
+                ? "rgba(255, 255, 255, 0.2)"
+                : "rgba(255, 255, 255, 0.1)"
+            }`,
+          }}
+        >
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}
+              >
                 <Avatar
                   alt={item.name}
                   src={item.image}
@@ -145,12 +161,40 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
                   </Typography>
                 </Box>
               </Box>
-              <IconButton 
+              <IconButton
                 onClick={(e) => handleMoreClick(e, item)}
                 sx={{ ml: 1 }}
               >
                 <MoreVertIcon />
               </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                // transformOrigin={{ horizontal: "right", vertical: "top" }}
+                // anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+              >
+                <MenuItem onClick={() => handleMenuAction("edit")}>
+                  <ListItemIcon>
+                    <EditIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Edit</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleMenuAction("delete")}>
+                  <ListItemIcon>
+                    <DeleteIcon fontSize="small" color="error" />
+                  </ListItemIcon>
+                  <ListItemText>Delete</ListItemText>
+                </MenuItem>
+              </Menu>
             </Box>
 
             <Button
@@ -166,35 +210,6 @@ const MasterItemTable = ({ items, onEdit, onDelete, onAddSubItem }) => {
           </CardContent>
         </Card>
       ))}
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          elevation: 0,
-          sx: {
-            overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-            mt: 1.5,
-          },
-        }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={() => handleMenuAction('edit')}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => handleMenuAction('delete')}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
-      </Menu>
     </Box>
   );
 

@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Tabs,
+  Tab,
   TextField,
   InputAdornment,
   Button,
-  useMediaQuery,
+  CircularProgress,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
@@ -20,44 +19,46 @@ import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import SubItems from "@/components/items/SubItems";
 import { useItems } from "@/context/ItemsContext";
 import { useSnackbar } from "@/hooks/useSnackbar";
-import axios from "axios";
-import { useSearchIitems } from "@/hooks/useSearchItems";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const ItemsPage = () => {
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
-  const { 
-    itemType, 
-    setItemType, 
-    masterItems, 
-    subItems, 
-    fetchMasterItems, 
-    fetchSubItems 
+
+  const {
+    itemType,
+    setItemType,
+    masterItems,
+    subItems,
+    loading,
+    fetchMasterItems,
+    fetchSubItems,
   } = useItems();
 
   const { showSnackbar, SnackbarComponent } = useSnackbar();
-  const { searchQuery, setSearchQuery, filteredItems } = useSearchIitems(
-    masterItems,
-    subItems,
-    itemType
-  );
+
   const [open, setOpen] = useState(false);
   const [openSubItem, setOpenSubItem] = useState(false);
   const [selectedMaster, setSelectedMaster] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleItemTypeChange = (event) => setItemType(event.target.value);
-  const handleAddMasterItemOpen = () => setOpen(true);
-  const handleAddMasterItemClose = () => setOpen(false);
-  const handleAddSubItemClose = () => setOpenSubItem(false);
-  const handleSearchChange = (event) => setSearchQuery(event.target.value);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const filteredItems = useMemo(() => {
+    const items =
+      itemType === "Master Items" ? masterItems : subItems;
+    return items.filter((item) =>
+      item.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [debouncedSearchQuery, itemType, masterItems, subItems]);
 
   const handleAddMasterItem = async (newItem) => {
     try {
-      await axios.post('/api/master-items', newItem);
+      await axios.post("/api/master-items", newItem);
       await fetchMasterItems();
       showSnackbar("Master item added successfully!", "success");
-      handleAddMasterItemClose();
+      setOpen(false);
     } catch (error) {
       console.error("Error adding master item:", error);
       showSnackbar("Failed to add master item.", "error");
@@ -66,10 +67,10 @@ const ItemsPage = () => {
 
   const handleAddSubItem = async (newSubItem) => {
     try {
-      await axios.post('/api/sub-items', newSubItem);
+      await axios.post("/api/sub-items", newSubItem);
       await fetchSubItems();
       showSnackbar("Sub item added successfully!", "success");
-      handleAddSubItemClose();
+      setOpenSubItem(false);
     } catch (error) {
       console.error("Error adding sub item:", error);
       showSnackbar("Failed to add sub item.", "error");
@@ -77,133 +78,110 @@ const ItemsPage = () => {
   };
 
   return (
-    <Box sx={{ 
-      padding: { xs: 2, sm: 3, md: 4 },
-      maxWidth: 1200, 
-      margin: "0 auto"
-    }}>
+    <Box sx={{ padding: 3, maxWidth: 1200, margin: "0 auto" }}>
       {/* Header Section */}
-      <Box sx={{
-        display: "flex",
-        flexDirection: { xs: "column", sm: "row" },
-        justifyContent: "space-between",
-        alignItems: { xs: "stretch", sm: "center" },
-        gap: 2,
-        marginBottom: 3
-      }}>
-        <Typography 
+      {/* <Typography variant="h4" sx={{ marginBottom: 3 }}>
+        Items
+      </Typography> */}
+
+<Typography 
           variant="h4" 
           sx={{ 
-            fontSize: { xs: '1.5rem', sm: '2rem' },
-            marginBottom: { xs: 2, sm: 0 }
+            fontSize: { xs: '1.5rem', sm: '2rem',  marginBottom: 3  }
           }}
         >
-          Items
+          Items 
         </Typography>
 
-        {/* Controls Container */}
-        <Box sx={{
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
-          width: { xs: "100%", sm: "auto" }
-        }}>
-          <FormControl 
-            variant="outlined" 
-            sx={{ 
-              minWidth: { xs: "100%", sm: 150 }
-            }}
-          >
-            <InputLabel id="item-type-label">Item Type</InputLabel>
-            <Select
-              labelId="item-type-label"
-              value={itemType}
-              onChange={handleItemTypeChange}
-              label="Item Type"
-            >
-              <MenuItem value="Sub Items">Sub Items</MenuItem>
-              <MenuItem value="Master Items">Master Items</MenuItem>
-            </Select>
-          </FormControl>
+      {/* Tabs Section */}
+      <Tabs
+        value={itemType}
+        onChange={(_, newValue) => setItemType(newValue)}
+        variant={isMobile ? "fullWidth" : "standard"}
+        sx={{ marginBottom: 2 }}
+      >
+        <Tab label="Master Items" value="Master Items" />
+        <Tab label="Sub Items" value="Sub Items" />
+      </Tabs>
 
-          <TextField
-            variant="outlined"
-            placeholder={`Search ${itemType.toLowerCase()}...`}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ 
-              width: "100%",
-              maxWidth: { xs: "100%", sm: 300 }
-            }}
-          />
+{/* Search and Add Button Section */}
+<Box
+  sx={{
+    display: "flex",
+    flexDirection: { xs: "column", sm: "row" },
+    justifyContent: { xs: "stretch", sm: "space-between" },
+    alignItems: { xs: "stretch", sm: "center" },
+    gap: 2,
+    marginBottom: 3,
+  }}
+>
+  <TextField
+    variant="outlined"
+    placeholder={`Search ${itemType.toLowerCase()}...`}
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    InputProps={{
+      startAdornment: (
+        <InputAdornment position="start">
+          <SearchIcon />
+        </InputAdornment>
+      ),
+    }}
+    sx={{
+      width: { xs: "100%", sm: 300 }, // Full width for mobile, fixed width for larger screens
+    }}
+  />
+
+  {itemType === "Master Items" && (
+    <Button
+      variant="contained"
+      color="primary"
+      startIcon={<AddIcon />}
+      onClick={() => setOpen(true)}
+      sx={{
+        width: { xs: "100%", sm: "auto" }, // Full width for mobile, auto width for larger screens
+        whiteSpace: "nowrap",
+      }}
+    >
+      Add Master Item
+    </Button>
+  )}
+</Box>
+
+
+      {/* Loading Spinner */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", marginTop: 5 }}>
+          <CircularProgress />
         </Box>
-      </Box>
-
-      {/* Add Master Item Button */}
-      {itemType === "Master Items" && (
-        <Box sx={{ 
-          display: "flex", 
-          justifyContent: { xs: "stretch", sm: "flex-end" },
-          marginBottom: 2
-        }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleAddMasterItemOpen}
-            sx={{ 
-              width: { xs: "100%", sm: "auto" }
-            }}
-          >
-            Add Master Item
-          </Button>
+      ) : (
+        /* Items List */
+        <Box>
+          {itemType === "Master Items" ? (
+            <MasterItems
+              items={filteredItems}
+              selectedMaster={selectedMaster}
+              setSelectedMaster={setSelectedMaster}
+            />
+          ) : (
+            <SubItems items={filteredItems} />
+          )}
         </Box>
       )}
 
-      {/* Content Section */}
-      <Box sx={{ 
-        overflowX: "auto",
-        "& .MuiTableContainer-root": {
-          maxWidth: "100%"
-        }
-      }}>
-        {itemType === "Master Items" ? (
-          <MasterItems 
-            items={filteredItems}
-            selectedMaster={selectedMaster}
-            setSelectedMaster={setSelectedMaster}
-            isMobile={isMobile}
-          />
-        ) : (
-          <SubItems 
-            items={filteredItems}
-            isMobile={isMobile}
-          />
-        )}
-      </Box>
-
       {/* Modals */}
-      <AddMasterItemForm 
-        open={open} 
-        handleClose={handleAddMasterItemClose} 
-        onAddNewMasterItem={handleAddMasterItem} 
-        fullScreen={isMobile}
+      <AddMasterItemForm
+        open={open}
+        handleClose={() => setOpen(false)}
+        onAddNewMasterItem={handleAddMasterItem}
       />
 
       <AddSubItemForm
         open={openSubItem}
-        handleClose={handleAddSubItemClose}
+        handleClose={() => setOpenSubItem(false)}
         masterItems={masterItems}
         selectedMaster={selectedMaster}
         onAdd={handleAddSubItem}
-        fullScreen={isMobile}
       />
 
       <SnackbarComponent />
