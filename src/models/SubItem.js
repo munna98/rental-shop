@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import MasterItem from '@/models/MasterItem';
 
 const SubItemSchema = new mongoose.Schema({
   master: {
