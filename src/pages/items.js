@@ -31,7 +31,7 @@ const ItemsPage = () => {
     setItemType,
     masterItems,
     subItems,
-    loading, // General loading state for master items
+    loading,
     fetchMasterItems,
     fetchSubItems,
   } = useItems();
@@ -43,23 +43,31 @@ const ItemsPage = () => {
   const [selectedMaster, setSelectedMaster] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingSubItems, setLoadingSubItems] = useState(false); // Subitems loading state
+  const [subItemsLoaded, setSubItemsLoaded] = useState(false); // Prevent repeated fetch
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Fetch subitems when tab is switched to "Sub Items"
   useEffect(() => {
     const fetchSubItemsWithLoading = async () => {
-      setLoadingSubItems(true); // Start loading for subitems
-      try {
-        await fetchSubItems(); // Fetch subitems from context function
-      } catch (error) {
-        console.error("Error fetching subitems:", error);
-        showSnackbar("Failed to load sub items.", "error");
-      } finally {
-        setLoadingSubItems(false); // Stop loading after fetch completes
+      if (!subItemsLoaded) { // Only fetch if not already loaded
+        setLoadingSubItems(true);
+        try {
+          await fetchSubItems(); // Fetch subitems from context function
+          setSubItemsLoaded(true); // Mark as loaded
+        } catch (error) {
+          console.error("Error fetching subitems:", error);
+          showSnackbar("Failed to load sub items.", "error");
+        } finally {
+          setLoadingSubItems(false);
+        }
       }
     };
-  }, [itemType, fetchSubItems, showSnackbar]);
+
+    if (itemType === "Sub Items") {
+      fetchSubItemsWithLoading();
+    }
+  }, [itemType, subItemsLoaded, fetchSubItems, showSnackbar]);
 
   const filteredItems = useMemo(() => {
     const items = itemType === "Master Items" ? masterItems : subItems;
