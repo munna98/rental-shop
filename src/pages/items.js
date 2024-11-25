@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -20,34 +20,49 @@ import SubItems from "@/components/items/SubItems";
 import { useItems } from "@/context/ItemsContext";
 import { useSnackbar } from "@/hooks/useSnackbar";
 import { useDebounce } from "@/hooks/useDebounce";
+import axios from "axios";
 
 const ItemsPage = () => {
-
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const {
     itemType,
     setItemType,
     masterItems,
     subItems,
-    loading,
+    loading, // General loading state for master items
     fetchMasterItems,
     fetchSubItems,
   } = useItems();
 
   const { showSnackbar, SnackbarComponent } = useSnackbar();
 
-  const [open, setOpen] = useState(false);
-  const [openSubItem, setOpenSubItem] = useState(false);
+  const [open, setOpen] = useState(false); // Master Item Modal
+  const [openSubItem, setOpenSubItem] = useState(false); // Sub Item Modal
   const [selectedMaster, setSelectedMaster] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingSubItems, setLoadingSubItems] = useState(false); // Subitems loading state
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
+  // Fetch subitems when tab is switched to "Sub Items"
+  useEffect(() => {
+    const fetchSubItemsWithLoading = async () => {
+      setLoadingSubItems(true); // Start loading for subitems
+      try {
+        await fetchSubItems(); // Fetch subitems from context function
+      } catch (error) {
+        console.error("Error fetching subitems:", error);
+        showSnackbar("Failed to load sub items.", "error");
+      } finally {
+        setLoadingSubItems(false); // Stop loading after fetch completes
+      }
+    };
+  }, [itemType, fetchSubItems, showSnackbar]);
+
   const filteredItems = useMemo(() => {
-    const items =
-      itemType === "Master Items" ? masterItems : subItems;
+    const items = itemType === "Master Items" ? masterItems : subItems;
     return items.filter((item) =>
       item.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
@@ -80,18 +95,15 @@ const ItemsPage = () => {
   return (
     <Box sx={{ padding: 3, maxWidth: 1200, margin: "0 auto" }}>
       {/* Header Section */}
-      {/* <Typography variant="h4" sx={{ marginBottom: 3 }}>
+      <Typography
+        variant="h4"
+        sx={{
+          fontSize: { xs: "1.5rem", sm: "2rem" },
+          marginBottom: 3,
+        }}
+      >
         Items
-      </Typography> */}
-
-<Typography 
-          variant="h4" 
-          sx={{ 
-            fontSize: { xs: '1.5rem', sm: '2rem',  marginBottom: 3  }
-          }}
-        >
-          Items 
-        </Typography>
+      </Typography>
 
       {/* Tabs Section */}
       <Tabs
@@ -104,53 +116,53 @@ const ItemsPage = () => {
         <Tab label="Sub Items" value="Sub Items" />
       </Tabs>
 
-{/* Search and Add Button Section */}
-<Box
-  sx={{
-    display: "flex",
-    flexDirection: { xs: "column", sm: "row" },
-    justifyContent: { xs: "stretch", sm: "space-between" },
-    alignItems: { xs: "stretch", sm: "center" },
-    gap: 2,
-    marginBottom: 3,
-  }}
->
-  <TextField
-    variant="outlined"
-    placeholder={`Search ${itemType.toLowerCase()}...`}
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    InputProps={{
-      startAdornment: (
-        <InputAdornment position="start">
-          <SearchIcon />
-        </InputAdornment>
-      ),
-    }}
-    sx={{
-      width: { xs: "100%", sm: 300 }, // Full width for mobile, fixed width for larger screens
-    }}
-  />
+      {/* Search and Add Button Section */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          justifyContent: { xs: "stretch", sm: "space-between" },
+          alignItems: { xs: "stretch", sm: "center" },
+          gap: 2,
+          marginBottom: 3,
+        }}
+      >
+        <TextField
+          variant="outlined"
+          placeholder={`Search ${itemType.toLowerCase()}...`}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            width: { xs: "100%", sm: 300 },
+          }}
+        />
 
-  {itemType === "Master Items" && (
-    <Button
-      variant="contained"
-      color="primary"
-      startIcon={<AddIcon />}
-      onClick={() => setOpen(true)}
-      sx={{
-        width: { xs: "100%", sm: "auto" }, // Full width for mobile, auto width for larger screens
-        whiteSpace: "nowrap",
-      }}
-    >
-      Add Master Item
-    </Button>
-  )}
-</Box>
-
+        {itemType === "Master Items" && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setOpen(true)}
+            sx={{
+              width: { xs: "100%", sm: "auto" },
+              whiteSpace: "nowrap",
+            }}
+          >
+            Add Master Item
+          </Button>
+        )}
+      </Box>
 
       {/* Loading Spinner */}
-      {loading ? (
+      {(loading && itemType === "Master Items") ||
+      (loadingSubItems && itemType === "Sub Items") ? (
         <Box sx={{ display: "flex", justifyContent: "center", marginTop: 5 }}>
           <CircularProgress />
         </Box>
