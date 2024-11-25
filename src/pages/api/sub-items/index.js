@@ -66,9 +66,11 @@ export default async function handler(req, res) {
         .populate('master')
         .sort({ createdAt: -1 }); // Sort by newest first
 
+        console.log("Fetched sub-items: ", subItems);
       res.status(200).json(subItems);
     } catch (error) {
       console.error("Error fetching sub-items:", error);
+      console.error(error.stack);
       res.status(500).json({ 
         message: "Failed to fetch sub-items",
         error: error.message 

@@ -69,12 +69,17 @@ const ItemsPage = () => {
     }
   }, [itemType, subItemsLoaded, fetchSubItems, showSnackbar]);
 
-  const filteredItems = useMemo(() => {
-    const items = itemType === "Master Items" ? masterItems : subItems;
-    return items.filter((item) =>
+  const filteredMasterItems = useMemo(() => {
+    return masterItems.filter((item) =>
       item.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
-  }, [debouncedSearchQuery, itemType, masterItems, subItems]);
+  }, [debouncedSearchQuery, masterItems]);
+
+  const filteredSubItems = useMemo(() => {
+    return subItems.filter((item) =>
+      item.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
+  }, [debouncedSearchQuery, subItems]);
 
   const handleAddMasterItem = async (newItem) => {
     try {
@@ -178,13 +183,9 @@ const ItemsPage = () => {
         /* Items List */
         <Box>
           {itemType === "Master Items" ? (
-            <MasterItems
-              items={filteredItems}
-              selectedMaster={selectedMaster}
-              setSelectedMaster={setSelectedMaster}
-            />
+            <MasterItems items={filteredMasterItems} />
           ) : (
-            <SubItems items={filteredItems} />
+            <SubItems items={filteredSubItems} />
           )}
         </Box>
       )}
