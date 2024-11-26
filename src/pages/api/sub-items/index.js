@@ -6,7 +6,7 @@ import SubItem from "@/models/SubItem";
 export default async function handler(req, res) {
   await connectDB();
 
-  mongoose.model('MasterItem'); 
+  // mongoose.model('MasterItem'); 
 
   if (req.method === "POST") {
     // Create a new sub-item

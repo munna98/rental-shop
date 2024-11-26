@@ -9,11 +9,12 @@ import EditMasterItemForm from "../forms/EditMasterItemForm";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import MasterItemTable from "./tables/masterItemTable";
 
-const MasterItems = ({ items, selectedMaster, setSelectedMaster }) => {
+const MasterItems = ({ items, }) => {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const { masterItems, fetchMasterItems, fetchSubItems } = useItems();
+  const [selectedMaster, setSelectedMaster] = useState(""); 
   const { showSnackbar, SnackbarComponent } = useSnackbar();
   const { showConfirmation, ConfirmationDialog } = useConfirmation();
 

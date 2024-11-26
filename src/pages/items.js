@@ -40,7 +40,7 @@ const ItemsPage = () => {
 
   const [open, setOpen] = useState(false); // Master Item Modal
   const [openSubItem, setOpenSubItem] = useState(false); // Sub Item Modal
-  const [selectedMaster, setSelectedMaster] = useState("");
+  const [selectedMaster, setSelectedMaster] = useState(""); 
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingSubItems, setLoadingSubItems] = useState(false); // Subitems loading state
   const [subItemsLoaded, setSubItemsLoaded] = useState(false); // Prevent repeated fetch
@@ -202,6 +202,7 @@ const ItemsPage = () => {
         handleClose={() => setOpenSubItem(false)}
         masterItems={masterItems}
         selectedMaster={selectedMaster}
+        setSelectedMaster={setSelectedMaster}
         onAdd={handleAddSubItem}
       />
 
