@@ -44,10 +44,6 @@ const InvoicingPage = () => {
           <InvoiceSummary />
         </Grid>
 
-        {/* <Grid item xs={12} md={6}>
-          <ReceiptDetails />
-        </Grid> */}
-
       </Grid>
     </Box>
   );

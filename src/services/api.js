@@ -241,12 +241,12 @@ export const createReceipts = async (receiptData) => {
         customer: receipt.customer,
         invoiceNumber: receiptData.invoiceNumber,
         transactionType: receiptData.transactionType || 'receipt',
-        sourcePage: receiptData.sourcePage || 'invoicing'
+        sourcePage: receiptData.sourcePage,
       }))
     };
     
     // Make the API call
-    const response = await fetch('/api/transactions', {
+    const response = await fetch('/api/receipts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -273,12 +273,69 @@ export const createReceipts = async (receiptData) => {
     throw error;
   }
 };
+
+// currently working
+// export const createReceipts = async (receiptData) => {
+//   try {
+//     // Format the receipt data before sending
+//     const formattedData = {
+//       ...receiptData,
+//       receipts: receiptData.receipts.map(receipt => ({
+//         amount: parseFloat(receipt.amount),
+//         date: receipt.date,
+//         method: receipt.method,
+//         note: receipt.note,
+//         customer: receipt.customer,
+//         invoiceNumber: receiptData.invoiceNumber,
+//         transactionType: receiptData.transactionType || 'receipt',
+//         sourcePage: receiptData.sourcePage || 'invoicing'
+//       }))
+//     };
+    
+//     // Make the API call
+//     const response = await fetch('/api/transactions', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(formattedData),
+//     });
+    
+//     const response = await fetch('/api/transactions', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(formattedData),
+//     });
+
+//     // Log for debugging
+//     console.log('Sending receipt data:', formattedData);
+
+//     if (!response.ok) {
+//       const error = await response.json();
+//       throw new Error(error.message || 'Failed to create receipts');
+//     }
+
+//     const result = await response.json();
+    
+//     // Log successful response
+//     console.log('Receipt creation response:', result);
+
+//     return result;
+//   } catch (error) {
+//     console.error('Error creating receipts:', error);
+//     throw error;
+//   }
+// };
+
+
 export const createPayments = async (paymentData) => {
   try {
     // Format the payment data before sending
     const formattedData = {
       ...paymentData,
-      receipts: paymentData.payments.map(payment => ({
+      payments: paymentData.payments.map(payment => ({
         amount: parseFloat(payment.amount),
         date: payment.date,
         method: payment.method,
@@ -286,12 +343,12 @@ export const createPayments = async (paymentData) => {
         customer: payment.customer,
         invoiceNumber: paymentData.invoiceNumber,
         transactionType: paymentData.transactionType || 'payment',
-        sourcePage: paymentData.sourcePage || 'invoicing'
+        sourcePage: paymentData.sourcePage ,
       }))
     };
     
     // Make the API call
-    const response = await fetch('/api/transactions', {
+    const response = await fetch('/api/payments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

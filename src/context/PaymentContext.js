@@ -135,7 +135,8 @@ const loadData = async () => {
           method: payment.method,
           date: payment.date,
           note: payment.note || ''
-        }))
+        })),
+        sourcePage: "payment",
       };
 
       const response = await createPayments(paymentData);

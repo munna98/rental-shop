@@ -9,7 +9,7 @@ import EditMasterItemForm from "../forms/EditMasterItemForm";
 import AddSubItemForm from "@/components/forms/AddSubItemForm";
 import MasterItemTable from "./tables/masterItemTable";
 
-const MasterItems = ({ items, }) => {
+const MasterItems = ({ items,hhandleAddSubItem }) => {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
@@ -48,6 +48,7 @@ const MasterItems = ({ items, }) => {
       }
     }
   };
+
 
   const handleEditOpen = (item) => {
     setCurrentItem(item);

@@ -4,7 +4,7 @@ import {
   fetchItems,
   fetchLastInvoiceNumber,
   fetchInvoiceByNumber,
-  createTransactions,
+  createReceipts,
   saveInvoice,
 } from "@/services/api";
 
@@ -176,7 +176,7 @@ export const InvoiceProvider = ({ children }) => {
 
 
   const saveInvoiceWithReceipts = async (invoiceData, receipts) => {
-    let createdTransactions = [];
+    let createdReceipts = [];
     
     try {
       // Calculate total paid amount from receipts
@@ -201,24 +201,24 @@ export const InvoiceProvider = ({ children }) => {
         sourcePage: "invoicing",
       };
   
-      // Save the transactions first
-      const transactionResult = await createTransactions(receiptData);
+      // Save the receipts first
+      const receiptResult = await createReceipts(receiptData);
   
-      if (!transactionResult?.transactions) {
+      if (!receiptResult?.receipts) {
         throw new Error('Failed to create receipts');
       }
   
-      createdTransactions = transactionResult.transactions;
+      createdReceipts = receiptResult.receipts;
   
       // Format the receipts with their IDs and other details
-      const updatedReceipts = transactionResult.transactions.map(
-        (transaction) => ({
-          id: transaction._id,
-          amount: transaction.amount,
-          date: transaction.date,
-          method: transaction.method,
-          serialNumber: transaction.serialNumber,
-          note: transaction.note,
+      const updatedReceipts = receiptResult.receipts.map(
+        (receipt) => ({
+          id: receipt._id,
+          amount: receipt.amount,
+          date: receipt.date,
+          method: receipt.method,
+          serialNumber: receipt.serialNumber,
+          note: receipt.note,
         })
       );
   
@@ -238,10 +238,10 @@ export const InvoiceProvider = ({ children }) => {
       const savedInvoice = await saveInvoice(completeInvoiceData);
 
       if (!savedInvoice) {
-        // If invoice save fails, attempt to delete the created transactions
-        if (createdTransactions.length > 0) {
-          const transactionIds = createdTransactions.map(t => t._id);
-          await deleteReceipts(transactionIds);
+        // If invoice save fails, attempt to delete the created receipts
+        if (createdReceipts.length > 0) {
+          const receiptIds = createdReceipts.map(t => t._id);
+          await deleteReceipts(receiptIds);
         }
         throw new Error('Failed to save invoice');
       }
@@ -252,20 +252,20 @@ export const InvoiceProvider = ({ children }) => {
       return {
         success: true,
         invoice: savedInvoice,
-        transactions: transactionResult.transactions,
+        receipts: receiptResult.receipts,
       };
   
     } catch (error) {
-      // Rollback transactions if they were created
-      if (createdTransactions.length > 0) {
+      // Rollback receipts if they were created
+      if (createdReceipts.length > 0) {
         try {
-          const transactionIds = createdTransactions.map(t => t._id);
-          await deleteReceipts(transactionIds);
-          console.log('Successfully rolled back transactions');
+          const receiptIds = createdReceipts.map(t => t._id);
+          await deleteReceipts(receiptIds);
+          console.log('Successfully rolled back receipts');
         } catch (rollbackError) {
-          console.error('Error rolling back transactions:', rollbackError);
+          console.error('Error rolling back receipts:', rollbackError);
           throw new Error(
-            'Error: Failed to rollback transactions. Manual cleanup may be required. ' +
+            'Error: Failed to rollback receipts. Manual cleanup may be required. ' +
             'Original error: ' + error.message
           );
         }

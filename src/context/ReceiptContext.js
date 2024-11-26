@@ -135,7 +135,8 @@ const loadData = async () => {
           method: receipt.method,
           date: receipt.date,
           note: receipt.note || ''
-        }))
+        })),
+        sourcePage: "receipt",
       };
 
       const response = await createReceipts (receiptData);
