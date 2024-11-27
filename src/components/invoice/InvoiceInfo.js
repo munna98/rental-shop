@@ -33,6 +33,11 @@ const InvoiceInfo = () => {
     });
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return ""; // Handle null or undefined dates
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0]; // Extract the date part in yyyy-MM-dd format
+  };
 
   return (
     <Paper
@@ -78,68 +83,11 @@ const InvoiceInfo = () => {
             );
           }}
         />
-        {/* <Autocomplete
-          options={customers}
-          getOptionLabel={(option) => option.name || ""}
-          value={selectedCustomer || null}
-          onChange={handleCustomerChange}
-          isOptionEqualToValue={(option, value) => option._id === value._id}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Customer Name"
-              variant="outlined"
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {params.InputProps.endAdornment}
-                    <IconButton
-                      variant="icon"
-                      size="small"
-                      onClick={handleAddCustomerOpen}
-                      sx={{ ml: 1 }}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                  </>
-                ),
-              }}
-            />
-          )}
-          renderOption={(props, option) => (
-            <Box component="li" {...props}>
-              <Box sx={{ display: "flex", flexDirection: "column" }}>
-                <Typography variant="body1">{option.name}</Typography>
-                {option.code && (
-                  <Typography variant="caption" color="text.secondary">
-                    {option.code}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-          fullWidth
-          filterOptions={(options, { inputValue }) => {
-            const filterValue = inputValue.toLowerCase();
-            return options.filter(
-              (option) =>
-                option.name.toLowerCase().includes(filterValue) ||
-                (option.code && option.code.toLowerCase().includes(filterValue))
-            );
-          }}
-        />
-        <AddCustomerForm
-          open={openAddCustomer}
-          handleClose={handleAddCustomerClose}
-          onAddCustomer={handleAddCustomer}
-          existingCustomers={customers}
-        /> */}
 
         <TextField
           label="Delivery Date"
           type="date"
-          value={deliveryDate}
+          value={formatDate(deliveryDate)}
           onChange={handleDeliveryDateChange}
           InputLabelProps={{
             shrink: true,
@@ -150,8 +98,7 @@ const InvoiceInfo = () => {
         <TextField
           label="Wedding Date"
           type="date"
-          value={weddingDate}
-          onChange={handleWeddingDateChange}
+          value={formatDate(weddingDate)} 
           InputLabelProps={{
             shrink: true,
           }}

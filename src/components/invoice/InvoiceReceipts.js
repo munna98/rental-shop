@@ -85,6 +85,13 @@ const InvoiceReceipts = () => {
   );
   const balanceAmount = totalAmount - totalPaid;
 
+  const formatDate = (dateString) => {
+    if (!dateString) return ""; // Handle null or undefined dates
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0]; // Extract the date part in yyyy-MM-dd format
+  };
+
+
   return (
     <Box
       component={Paper}
@@ -213,7 +220,7 @@ const InvoiceReceipts = () => {
                 <TextField
                   label="Date"
                   type="date"
-                  value={receipt.date}
+                  value={formatDate(receipt.date)}
                   onChange={(e) => handleReceiptChange(receipt.id, 'date', e.target.value)}
                   fullWidth
                   size="small"

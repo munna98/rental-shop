@@ -55,7 +55,7 @@ const invoiceSchema = new mongoose.Schema({
   invoiceNumber: { 
     type: String, 
     required: true,
-    // unique: true,
+    unique: true,
     index: true
   },
   customer: { 
@@ -78,7 +78,7 @@ const invoiceSchema = new mongoose.Schema({
   },
   receipts: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Transaction'
+    ref: 'Receipt'
   }],
   
   // Add fields to track payment
@@ -107,6 +107,14 @@ const invoiceSchema = new mongoose.Schema({
   }
 });
 
+invoiceSchema.pre('validate', function(next) {
+  if (this.deliveryDate > this.weddingDate) {
+    return next(new Error('Delivery date cannot be after the wedding date.'));
+  }
+  next();
+});
+
+
 // Update the updatedAt field before saving
 invoiceSchema.pre('save', function(next) {
   // Update paymentStatus based on paidAmount and totalAmount
@@ -117,6 +125,22 @@ invoiceSchema.pre('save', function(next) {
   } else {
     this.paymentStatus = 'pending';
   }
+  next();
+});
+
+// Update delivery status based on the delivery date
+invoiceSchema.pre('save', function (next) {
+  const today = new Date();
+  const deliveryDate = this.deliveryDate;
+
+  // Update deliveryStatus for each item in the invoice
+  this.items.forEach((item) => {
+    if (deliveryDate > today) {
+      item.deliveryStatus = 'Pending'; // Future delivery date
+    } else {
+      item.deliveryStatus = 'Overdue'; // Delivery date has passed
+    }
+  });
   next();
 });
 
