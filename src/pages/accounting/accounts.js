@@ -75,7 +75,7 @@ const Accounts = () => {
   };
 
   return (
-    <Box sx={{ padding: 4, maxWidth: 1200, margin: "0 auto" }}>
+    <Box sx={{ maxWidth: 1200, margin: "0 auto" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <Typography variant="h5" gutterBottom>Accounts</Typography>
 

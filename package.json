@@ -9,12 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@date-io/date-fns": "^3.0.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.5",
     "@mui/lab": "^6.0.0-beta.13",
-    "@mui/material": "^6.1.5",
+    "@mui/material": "^6.1.8",
+    "@mui/x-date-pickers": "^7.22.3",
+    "@mui/x-date-pickers-pro": "^7.22.3",
     "axios": "^1.7.7",
+    "date-fns": "^3.6.0",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "emoji-js": "^3.8.0",
     "mongoose": "^8.7.3",
@@ -22,6 +27,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-query": "^3.39.3",
+    "recharts": "^2.13.3",
     "twilio": "^5.3.5"
   }
 }
