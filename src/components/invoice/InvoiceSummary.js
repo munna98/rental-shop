@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { generateWhatsAppLink } from '@/services/whatsapp';
-import { useInvoice, ACTIONS } from '@/context/InvoiceContext';
+import { useInvoice, ACTIONS } from '@/context/InvoiceContext/InvoiceContext';
 import { useSnackbar } from '@/hooks/useSnackbar';
 
 const InvoiceSummary = () => {
@@ -17,10 +17,7 @@ const InvoiceSummary = () => {
     receipts,
     refreshInvoiceNumber,
     dispatch,
-    saveInvoiceWithReceipts,
   } = useInvoice();
-
-  const { showSnackbar, SnackbarComponent } = useSnackbar();
 
   const customerDetails = selectedCustomer;
 
@@ -34,93 +31,83 @@ const InvoiceSummary = () => {
   // Format date to improve code readability
   const formatDate = (date) => new Date(date).toLocaleDateString();
 
-  const handleSave = async () => {
-    if (!selectedCustomer) {
-      showSnackbar("Please select a customer to proceed.", "warning");
-      return null;
-    }
+  // const handleSave = async () => {
+  //   if (!selectedCustomer) {
+  //     showSnackbar("Please select a customer to proceed.", "warning");
+  //     return null;
+  //   }
 
-    try {
-      const invoiceData = {
-        invoiceNumber,
-        customer: selectedCustomer,
-        items: selectedItems.map(item => ({
-          ...item,
-          measurement: item.measurement || [
-            { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
-          ],
-          status: item.status || "Rented",
-          deliveryStatus: item.deliveryStatus || "Pending",
-        })),
-        totalAmount,
-        deliveryDate,
-        weddingDate,
-      };
+  //   try {
+  //     const invoiceData = {
+  //       invoiceNumber,
+  //       customer: selectedCustomer,
+  //       items: selectedItems.map(item => ({
+  //         ...item,
+  //         measurement: item.measurement || [
+  //           { item: '', sleeve: '', waist: '', length: '', pantsize: '' }
+  //         ],
+  //         status: item.status || "Rented",
+  //         deliveryStatus: item.deliveryStatus || "Pending",
+  //       })),
+  //       totalAmount,
+  //       deliveryDate,
+  //       weddingDate,
+  //     };
 
-      const result = await saveInvoiceWithReceipts(invoiceData, receipts);
+  //     const result = await saveInvoiceWithReceipts(invoiceData, receipts);
 
-      if (result.success) {
-        dispatch({ 
-          type: ACTIONS.UPDATE_INVOICE_STATUS,   
-          payload: result.invoice 
-        });
-        dispatch({ type: ACTIONS.RESET_RECEIPTS });
-        await refreshInvoiceNumber();
-        showSnackbar('Invoice and receipts saved successfully!', "success");
-        return result;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error saving invoice:', error);
-      showSnackbar(
-        error.message.includes('Critical error') 
-          ? 'A critical error occurred. Please contact support.'
-          : 'Failed to save invoice. Please try again.',
-        "error"
-      );
-      return null;
-    }
-  };
+  //     return null;
+  //   } catch (error) {
+  //     console.error('Error saving invoice:', error);
+  //     showSnackbar(
+  //       error.message.includes('Critical error') 
+  //         ? 'A critical error occurred. Please contact support.'
+  //         : 'Failed to save invoice. Please try again.',
+  //       "error"
+  //     );
+  //     return null;
+  //   }
+  // };
 
-  const handleSaveAndSendWhatsApp = async () => {
-    if (!customerDetails) {
-      showSnackbar("Please select a customer to proceed.", "warning");
-      return;
-    }
+  // const handleSaveAndSendWhatsApp = async () => {
+  //   if (!customerDetails) {
+  //     showSnackbar("Please select a customer to proceed.", "warning");
+  //     return;
+  //   }
 
-    try {
-      const saveResult = await handleSave();
+  //   try {
+  //     const saveResult = await handleSave();
 
-      if (!saveResult?.success) {
-        throw new Error('Failed to save invoice and receipts');
-      }
+  //     if (!saveResult?.success) {
+  //       throw new Error('Failed to save invoice and receipts');
+  //     }
 
-      const formattedItems = selectedItems.map(item => ({
-        name: item.name,
-        measurement: item.measurement || [
-          { item: '', sleeve: '', waist: '', length: '', pantsize: '' },
-        ],
-        rentRate: item.rentRate,
-      }));
+  //     const formattedItems = selectedItems.map(item => ({
+  //       name: item.name,
+  //       measurement: item.measurement || [
+  //         { item: '', sleeve: '', waist: '', length: '', pantsize: '' },
+  //       ],
+  //       rentRate: item.rentRate,
+  //     }));
 
-      const whatsappMessage = generateWhatsAppLink({
-        invoiceNumber,
-        customerName: customerDetails.name,
-        customer: customerDetails.mobile,
-        items: formattedItems,
-        totalAmount,
-        paidAmount: saveResult.invoice.paidAmount,
-        balanceAmount: totalAmount - saveResult.invoice.paidAmount,
-        deliveryDate,
-        weddingDate,
-      });
+  //     const whatsappMessage = generateWhatsAppLink({
+  //       invoiceNumber,
+  //       customerName: customerDetails.name,
+  //       customer: customerDetails.mobile,
+  //       items: formattedItems,
+  //       totalAmount,
+  //       paidAmount: saveResult.invoice.paidAmount,
+  //       balanceAmount: totalAmount - saveResult.invoice.paidAmount,
+  //       deliveryDate,
+  //       weddingDate,
+  //     });
 
-      window.open(whatsappMessage, '_blank');
-    } catch (error) {
-      console.error('Error in save and send:', error);
-      showSnackbar('Failed to complete the operation. Please try again.', "error");
-    }
-  };
+  //     window.open(whatsappMessage, '_blank');
+  //   } catch (error) {
+  //     console.error('Error in save and send:', error);
+  //     showSnackbar('Failed to complete the operation. Please try again.', "error");
+  //   }
+  // };
 
 
   return (
@@ -183,29 +170,6 @@ const InvoiceSummary = () => {
         </Typography>
       </Box>
       
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSave}
-          fullWidth
-          disabled={!customerDetails || totalAmount <= 0 || selectedItems.length === 0}
-        >
-          Save Invoice
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSaveAndSendWhatsApp}
-          fullWidth
-          disabled={!customerDetails || totalAmount <= 0 || selectedItems.length === 0}
-        >
-          Save & Send WhatsApp
-        </Button>
-      </Box>
-
-      {/* Snackbar component */}
-      <SnackbarComponent />
     </Box>
   );
 };

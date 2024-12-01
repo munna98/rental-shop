@@ -3,7 +3,7 @@ import React from "react";
 import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { useInvoice } from "@/context/InvoiceContext";
+import { useInvoice } from "@/context/InvoiceContext/InvoiceContext";
 
 
 const InvoiceHeader = () => {

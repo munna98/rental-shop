@@ -1,5 +1,6 @@
 import connectDB from "@/config/db"; // Adjust the path based on your db connection file location
 import Invoice from "@/models/Invoice"; // Adjust the path based on your models location
+import Receipt from '@/models/Receipt';
 
 export const invoiceService = {
   // Get invoice by number with populated data

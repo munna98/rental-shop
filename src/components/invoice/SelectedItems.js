@@ -28,7 +28,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
-import { useInvoice } from '@/context/InvoiceContext';
+import { useInvoice } from '@/context/InvoiceContext/InvoiceContext';
 import { useSnackbar } from '@/hooks/useSnackbar';
 
 const SelectedItems = () => {

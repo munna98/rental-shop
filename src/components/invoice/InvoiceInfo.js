@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, IconButton, TextField, Autocomplete, Paper } from "@mui/material";
-import { useInvoice } from "@/context/InvoiceContext";
+import { useInvoice } from "@/context/InvoiceContext/InvoiceContext";
 import AddIcon from "@mui/icons-material/Add";
 
 const InvoiceInfo = () => {
@@ -10,6 +10,7 @@ const InvoiceInfo = () => {
     deliveryDate,
     weddingDate,
     customers = [],
+    isEditMode,
   } = useInvoice();
 
   const handleCustomerChange = (event, newValue) => {
@@ -57,6 +58,7 @@ const InvoiceInfo = () => {
           getOptionLabel={(option) => option.name || ""}
           value={selectedCustomer || null}
           onChange={handleCustomerChange}
+          disabled={!isEditMode} 
           isOptionEqualToValue={(option, value) => option._id === value._id}
           renderInput={(params) => (
             <TextField {...params} label="Customer Name" variant="outlined" />
@@ -89,6 +91,7 @@ const InvoiceInfo = () => {
           type="date"
           value={formatDate(deliveryDate)}
           onChange={handleDeliveryDateChange}
+          disabled={!isEditMode} 
           InputLabelProps={{
             shrink: true,
           }}
@@ -99,6 +102,8 @@ const InvoiceInfo = () => {
           label="Wedding Date"
           type="date"
           value={formatDate(weddingDate)} 
+          onChange={handleWeddingDateChange}
+          disabled={!isEditMode}  
           InputLabelProps={{
             shrink: true,
           }}

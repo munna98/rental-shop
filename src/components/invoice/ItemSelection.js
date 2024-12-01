@@ -12,7 +12,7 @@ import {
   Paper,
 } from "@mui/material";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useInvoice } from "@/context/InvoiceContext";
+import { useInvoice } from "@/context/InvoiceContext/InvoiceContext";
 
 const ItemSelection = () => {
   // Local state for form fields
@@ -27,7 +27,7 @@ const ItemSelection = () => {
   });
 
   // Get items and dispatch from context
-  const { items = [], dispatch } = useInvoice();
+  const { items = [], dispatch , isEditMode } = useInvoice();
 
   const handleItemChange = (event, newValue) => {
     setSelectedItem(newValue);
@@ -93,6 +93,7 @@ const ItemSelection = () => {
             }
             value={selectedItem}
             onChange={handleItemChange}
+            disabled={!isEditMode}
             isOptionEqualToValue={(option, value) => option._id === value._id}
             renderInput={(params) => (
               <TextField
@@ -130,6 +131,7 @@ const ItemSelection = () => {
             type="number"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
+            disabled={!isEditMode}
             fullWidth
           />
         </Grid>
@@ -153,6 +155,7 @@ const ItemSelection = () => {
                     type="number"
                     value={measurements.item}
                     onChange={handleMeasurementChange('item')}
+                    disabled={!isEditMode}
                     fullWidth
                     InputProps={{ inputProps: { min: 0 } }}
                   />
@@ -163,6 +166,7 @@ const ItemSelection = () => {
                     type="number"
                     value={measurements.sleeve}
                     onChange={handleMeasurementChange('sleeve')}
+                    disabled={!isEditMode}
                     fullWidth
                     InputProps={{ inputProps: { min: 0 } }}
                   />
@@ -173,6 +177,7 @@ const ItemSelection = () => {
                     type="number"
                     value={measurements.waist}
                     onChange={handleMeasurementChange('waist')}
+                    disabled={!isEditMode}
                     fullWidth
                     InputProps={{ inputProps: { min: 0 } }}
                   />
@@ -183,6 +188,7 @@ const ItemSelection = () => {
                     type="number"
                     value={measurements.length}
                     onChange={handleMeasurementChange('length')}
+                    disabled={!isEditMode}
                     fullWidth
                     InputProps={{ inputProps: { min: 0 } }}
                   />
@@ -193,6 +199,7 @@ const ItemSelection = () => {
                     type="number"
                     value={measurements.pantsize}
                     onChange={handleMeasurementChange('pantsize')}
+                    disabled={!isEditMode}
                     fullWidth
                     InputProps={{ inputProps: { min: 0 } }}
                   />

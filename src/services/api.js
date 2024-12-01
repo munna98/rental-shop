@@ -26,6 +26,7 @@ export const fetchAccounts = async () => {
 
 
 // *************INVOICE*****************
+// src/services/api.js
 
 export const fetchLastInvoiceNumber = async () => {
   try {
@@ -66,38 +67,6 @@ export const saveInvoice = async (invoiceData) => {
   }
 };
 
- // Update invoice with new payment information
-// export const updateInvoicePayments = async (invoiceId) => {
-//   try {
-//     const invoice = await Invoice.findById(invoiceId).populate('receipts');
-    
-//     // Calculate total paid amount from all receipts
-//     const totalPaidAmount = invoice.receipts.reduce(
-//       (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-//       0
-//     );
-
-//     // Update invoice with new payment information
-//     const updatedInvoice = await Invoice.findByIdAndUpdate(
-//       invoiceId,
-//       {
-//         paidAmount: totalPaidAmount,
-//         balanceAmount: invoice.totalAmount - totalPaidAmount,
-//         paymentStatus: totalPaidAmount >= invoice.totalAmount 
-//           ? "completed" 
-//           : totalPaidAmount > 0 
-//             ? "partial" 
-//             : "pending"
-//       },
-//       { new: true }
-//     );
-
-//     return updatedInvoice;
-//   } catch (error) {
-//     console.error("Error updating invoice payments:", error);
-//     throw error;
-//   }
-// };
 
 // Add this to fetch existing invoices if needed
 export const getInvoices = async () => {
@@ -113,7 +82,7 @@ export const getInvoices = async () => {
   }
 };
 
-// src/services/api.js
+
 
 // ... existing api functions ...
 
@@ -196,37 +165,7 @@ export const deleteInvoice = async (id) => {
 // src/services/api.js
 // src/services/api.js
 
-// export const createTransactions = async (data) => {
-//   try {
-//     const response = await fetch('/api/transactions', {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({
-//         entityId: data.entityId,
-//         entityType: data.entityType,
-//         invoice: data.invoiceNumber,
-//         transactions: data.transactions.map(item => ({
-//           type: data.type,
-//           amount: item.amount,
-//           date: item.date,
-//           method: item.method,
-//           note: item.note,
-//           source: data.sourcePage || 'invoicing'
-//         }))
-//       })
-//     });
 
-//     if (!response.ok) {
-//       const error = await response.json();
-//       throw new Error(error.message);
-//     }
-
-//     return response.json();
-//   } catch (error) {
-//     console.error(`Error creating transactions:`, error);
-//     throw error;
-//   }
-// };
 
 export const createReceipts = async (receiptData) => {
   try {
@@ -273,61 +212,6 @@ export const createReceipts = async (receiptData) => {
     throw error;
   }
 };
-
-// currently working
-// export const createReceipts = async (receiptData) => {
-//   try {
-//     // Format the receipt data before sending
-//     const formattedData = {
-//       ...receiptData,
-//       receipts: receiptData.receipts.map(receipt => ({
-//         amount: parseFloat(receipt.amount),
-//         date: receipt.date,
-//         method: receipt.method,
-//         note: receipt.note,
-//         customer: receipt.customer,
-//         invoiceNumber: receiptData.invoiceNumber,
-//         transactionType: receiptData.transactionType || 'receipt',
-//         sourcePage: receiptData.sourcePage || 'invoicing'
-//       }))
-//     };
-    
-//     // Make the API call
-//     const response = await fetch('/api/transactions', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(formattedData),
-//     });
-    
-//     const response = await fetch('/api/transactions', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(formattedData),
-//     });
-
-//     // Log for debugging
-//     console.log('Sending receipt data:', formattedData);
-
-//     if (!response.ok) {
-//       const error = await response.json();
-//       throw new Error(error.message || 'Failed to create receipts');
-//     }
-
-//     const result = await response.json();
-    
-//     // Log successful response
-//     console.log('Receipt creation response:', result);
-
-//     return result;
-//   } catch (error) {
-//     console.error('Error creating receipts:', error);
-//     throw error;
-//   }
-// };
 
 
 export const createPayments = async (paymentData) => {

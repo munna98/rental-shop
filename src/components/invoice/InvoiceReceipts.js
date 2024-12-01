@@ -20,7 +20,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { useInvoice } from '@/context/InvoiceContext';
+import { useInvoice } from '@/context/InvoiceContext/InvoiceContext';
 
 const PAYMENT_METHODS = {
   cash: 'Cash',
@@ -30,7 +30,8 @@ const PAYMENT_METHODS = {
 };
 
 const InvoiceReceipts = () => {
-  const { totalAmount, receipts, dispatch } = useInvoice();
+
+  const { totalAmount, receipts, dispatch, isEditMode  } = useInvoice();
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState({});
 
@@ -120,6 +121,7 @@ const InvoiceReceipts = () => {
           variant="outlined"
           startIcon={<AddIcon />}
           onClick={addReceipt}
+          disabled={!isEditMode}
           sx={{ 
             borderRadius: 2,
             textTransform: 'none',

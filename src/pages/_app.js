@@ -4,7 +4,7 @@ import "../styles/global.css"; // Import global styles
 import { lightTheme, darkTheme } from "../styles/theme"; // Import custom themes
 import DashboardLayout from "../layouts/DashboardLayout"; // Import layout
 import { ItemsProvider } from "@/context/ItemsContext";
-import { InvoiceProvider } from "@/context/InvoiceContext"; // Import InvoiceProvider
+import { InvoiceProvider } from "@/context/InvoiceContext/InvoiceContext"; // Import InvoiceProvider
 import { LedgerProvider } from "@/context/LedgerContext";
 import { AccountsProvider } from "@/context/AccountsContext";
 import { ReceiptProvider } from "@/context/ReceiptContext";

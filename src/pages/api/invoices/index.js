@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         const {
           invoiceNumber,
           customer,
-          items,
+          items,      
           totalAmount,
           deliveryDate,
           weddingDate,

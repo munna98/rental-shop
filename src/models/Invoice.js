@@ -137,6 +137,8 @@ invoiceSchema.pre('save', function (next) {
   this.items.forEach((item) => {
     if (deliveryDate > today) {
       item.deliveryStatus = 'Pending'; // Future delivery date
+    } else if (deliveryDate.toDateString() === today.toDateString()) {
+      item.deliveryStatus = 'Delivered'; // Delivery date is today
     } else {
       item.deliveryStatus = 'Overdue'; // Delivery date has passed
     }
@@ -182,6 +184,7 @@ invoiceSchema.statics.findByDateRange = function(startDate, endDate) {
 };
 
 // Create the model
-const Invoice = mongoose.models.Invoice || mongoose.model('Invoice', invoiceSchema);
+// const Invoice = mongoose.models.Invoice || mongoose.model('Invoice', invoiceSchema);
 
-export default Invoice;
+// export default Invoice;
+export default mongoose.models.Invoice || mongoose.model('Invoice', invoiceSchema);

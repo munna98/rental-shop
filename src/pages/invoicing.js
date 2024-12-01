@@ -6,7 +6,8 @@ import ItemSelection from "@/components/invoice/ItemSelection";
 import SelectedItems from "@/components/invoice/SelectedItems";
 import InvoiceSummary from "@/components/invoice/InvoiceSummary";
 import InvoiceReceipts from '@/components/invoice/InvoiceReceipts';
-import { useInvoice } from "@/context/InvoiceContext";
+import { useInvoice } from "@/context/InvoiceContext/InvoiceContext";
+import InvoiceActions from "@/components/invoice/InvoiceActions";
 
 const InvoicingPage = () => {
   const { invoiceNumber } = useInvoice();
@@ -42,6 +43,9 @@ const InvoicingPage = () => {
 
         <Grid item xs={12} md={6}>
           <InvoiceSummary />
+        </Grid>
+        <Grid item xs={12} md={12}>
+          <InvoiceActions />
         </Grid>
 
       </Grid>

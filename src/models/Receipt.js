@@ -39,10 +39,10 @@ const receiptSchema = new mongoose.Schema({
   note: {
     type: String,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  // createdAt: {
+  //   type: Date,
+  //   default: Date.now,
+  // },
   sourcePage: {
     type: String,
     enum: ['receipt', 'invoicing'],
